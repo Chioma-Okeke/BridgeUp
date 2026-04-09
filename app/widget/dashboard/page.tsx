@@ -241,7 +241,7 @@ export default function DashboardWidget() {
               className="w-full flex items-center justify-center gap-2 bg-white border-2 border-dashed border-[#8C1D40]/30 hover:border-[#8C1D40] rounded-2xl py-3 text-[#8C1D40] font-semibold text-sm transition-all hover:bg-[#8C1D40]/5"
             >
               <span>😮‍💨</span>
-              I`&apos;`m struggling too
+              I&apos;m struggling too
             </button>
           )}
 
