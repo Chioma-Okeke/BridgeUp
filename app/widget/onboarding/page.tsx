@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const AVATARS = ["🌵", "🦋", "🌟", "🔥", "🌊", "🦅", "🌸", "⚡", "🎯", "🌙"];
 
@@ -324,6 +324,12 @@ export default function Onboarding() {
   const [selectedAvatar, setSelectedAvatar] = useState("🌵");
   const [name, setName] = useState("");
   const [comfort, setComfort] = useState(3);
+
+  useEffect(() => {
+    if (localStorage.getItem("bridgeup_onboarded") === "true") {
+      window.location.replace("/widget/dashboard");
+    }
+  }, []);
 
   return (
     <div className="h-screen w-full bg-[#8C1D40] flex flex-col p-5 overflow-hidden font-sans">
