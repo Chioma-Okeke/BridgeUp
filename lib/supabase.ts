@@ -34,6 +34,7 @@ export type Student = {
   checkin_day: string;
   room_id: string;
   created_at: string;
+  is_first_gen: boolean;
 };
 
 export type EventType = "struggling" | "checkin" | "booking";

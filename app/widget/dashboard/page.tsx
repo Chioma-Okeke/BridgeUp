@@ -382,7 +382,7 @@ const NAVIGATION_SUGGESTIONS = [
   "What's an academic advisor and when should I see one?",
 ];
 
-function AIHelpTab() {
+function AIHelpTab({ isFirstGen }: { isFirstGen: boolean }) {
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [input, setInput]       = useState("");
   const [loading, setLoading]   = useState(false);
@@ -422,28 +422,31 @@ function AIHelpTab() {
 
       {messages.length === 0 && (
         <div className="flex flex-col gap-3 mb-3">
-          <div className="flex flex-col gap-1.5">
-            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest px-1">Find support</p>
-            {RESOURCE_SUGGESTIONS.map((s) => (
-              <button key={s} type="button" onClick={() => handleSend(s)}
-                className="text-left bg-white border border-zinc-200 hover:border-[#8C1D40]/30 rounded-xl px-3 py-2.5 text-sm text-zinc-600 hover:bg-[#8C1D40]/5 transition-all">
-                {s}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-2 px-1">
-              <p className="text-[10px] text-[#8C1D40] font-bold uppercase tracking-widest">How college works</p>
-              <span className="bg-[#8C1D40] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">First-gen</span>
+          {isFirstGen ? (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2 px-1">
+                <p className="text-[10px] text-[#8C1D40] font-bold uppercase tracking-widest">How college works</p>
+                <span className="bg-[#8C1D40] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">First-gen</span>
+              </div>
+              <p className="text-[10px] text-zinc-400 px-1 -mt-0.5">Questions you never got to ask — this is the safe place.</p>
+              {NAVIGATION_SUGGESTIONS.map((s) => (
+                <button key={s} type="button" onClick={() => handleSend(s)}
+                  className="text-left bg-[#8C1D40]/5 border border-[#8C1D40]/15 hover:border-[#8C1D40]/40 rounded-xl px-3 py-2.5 text-sm text-zinc-700 hover:bg-[#8C1D40]/10 transition-all">
+                  {s}
+                </button>
+              ))}
             </div>
-            <p className="text-[10px] text-zinc-400 px-1 -mt-0.5">Questions you never got to ask — this is the safe place.</p>
-            {NAVIGATION_SUGGESTIONS.map((s) => (
-              <button key={s} type="button" onClick={() => handleSend(s)}
-                className="text-left bg-[#8C1D40]/5 border border-[#8C1D40]/15 hover:border-[#8C1D40]/40 rounded-xl px-3 py-2.5 text-sm text-zinc-700 hover:bg-[#8C1D40]/10 transition-all">
-                {s}
-              </button>
-            ))}
-          </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest px-1">Find support</p>
+              {RESOURCE_SUGGESTIONS.map((s) => (
+                <button key={s} type="button" onClick={() => handleSend(s)}
+                  className="text-left bg-white border border-zinc-200 hover:border-[#8C1D40]/30 rounded-xl px-3 py-2.5 text-sm text-zinc-600 hover:bg-[#8C1D40]/5 transition-all">
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -510,8 +513,138 @@ function AIHelpTab() {
   );
 }
 
+// ── Tab 4: Semester Plan ──────────────────────────────────────────────────────
+// ASU Spring 2026 — mirrors the same calendar used in course/page.tsx
+const PLAN_SEMESTER_START = new Date("2026-01-12");
+
+function getPlanWeek(): number {
+  const diff = Date.now() - PLAN_SEMESTER_START.getTime();
+  return Math.max(1, Math.min(16, Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 1));
+}
+
+type SemesterNudge = {
+  week: number;
+  icon: string;
+  title: string;
+  body: string;
+  cta: { label: string; href: string };
+};
+
+const SEMESTER_NUDGES: SemesterNudge[] = [
+  {
+    week: 1,
+    icon: "🗺️",
+    title: "Resources Worth Knowing Now",
+    body: "Before anything gets hard — tutoring, writing help, and counseling are all free and exist for you. You don't have to be struggling to use them.",
+    cta: { label: "Explore ASU Student Resources →", href: "https://students.asu.edu" },
+  },
+  {
+    week: 3,
+    icon: "📋",
+    title: "Run Your First DARS Audit",
+    body: "DARS shows exactly which graduation requirements you've met and what's left. Week 3 is the right time — early enough to fix surprises before they matter.",
+    cta: { label: "Open DARS Audit →", href: "https://webapp4.asu.edu/dars" },
+  },
+  {
+    week: 6,
+    icon: "💙",
+    title: "Mid-Semester Counseling Check-in",
+    body: "Stress tends to peak around weeks 7–9. Booking now — before you feel like you need it — means you won't be on a waitlist when it matters most.",
+    cta: { label: "Book ASU Counseling →", href: "https://eoss.asu.edu/counseling" },
+  },
+  {
+    week: 10,
+    icon: "🎓",
+    title: "Start Finals Prep Now",
+    body: "Tutoring spots fill up 2–3 weeks before finals. Getting a session on the calendar now is one of the highest-impact things you can do this semester.",
+    cta: { label: "Book ASN Tutoring →", href: "https://tutoring.asu.edu" },
+  },
+];
+
+function PlanTab() {
+  const currentWeek = getPlanWeek();
+  // The active nudge is the most recent one whose week has arrived
+  const activeNudge = [...SEMESTER_NUDGES].reverse().find((n) => currentWeek >= n.week);
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Intro */}
+      <div className="bg-[#8C1D40] rounded-2xl p-4">
+        <p className="text-white font-bold text-sm mb-1">Your Semester Roadmap</p>
+        <p className="text-white/70 text-xs leading-relaxed">
+          These check-ins fire for every student — not because something&apos;s wrong, but because knowing early is how you stay ahead.
+        </p>
+        <p className="text-white/50 text-[10px] mt-2 font-semibold">Week {currentWeek} of 16</p>
+      </div>
+
+      {/* Timeline */}
+      <div className="flex flex-col">
+        {SEMESTER_NUDGES.map((nudge, i) => {
+          const isPast    = currentWeek > nudge.week && nudge !== activeNudge;
+          const isActive  = nudge === activeNudge;
+          const isFuture  = currentWeek < nudge.week;
+
+          return (
+            <div key={nudge.week} className="flex gap-3">
+              {/* Timeline spine */}
+              <div className="flex flex-col items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-base shrink-0 ${
+                  isActive  ? "bg-[#FFC627] shadow-[0_0_12px_rgba(255,198,39,0.5)]" :
+                  isPast    ? "bg-green-100" :
+                  "bg-zinc-100"
+                }`}>
+                  {isPast ? "✓" : nudge.icon}
+                </div>
+                {i < SEMESTER_NUDGES.length - 1 && (
+                  <div className={`w-0.5 flex-1 my-1 min-h-4 ${isPast ? "bg-green-200" : "bg-zinc-200"}`} />
+                )}
+              </div>
+
+              {/* Card */}
+              <div className={`flex-1 mb-4 rounded-2xl p-3.5 border ${
+                isActive  ? "bg-white border-[#FFC627]/60 shadow-sm" :
+                isPast    ? "bg-zinc-50 border-zinc-100 opacity-60" :
+                "bg-zinc-50 border-zinc-100"
+              }`}>
+                <div className="flex items-center justify-between mb-1">
+                  <p className={`text-[10px] font-bold uppercase tracking-widest ${
+                    isActive ? "text-[#8C1D40]" : isPast ? "text-green-600" : "text-zinc-400"
+                  }`}>
+                    {isPast ? "Completed" : isActive ? "Now — Week " + nudge.week : "Week " + nudge.week}
+                  </p>
+                  {isFuture && (
+                    <span className="text-[10px] text-zinc-400 font-medium">in {nudge.week - currentWeek}w</span>
+                  )}
+                </div>
+                <p className={`font-bold text-sm mb-1 ${isPast ? "text-zinc-500" : "text-zinc-800"}`}>{nudge.title}</p>
+                {!isPast && (
+                  <>
+                    <p className="text-zinc-500 text-xs leading-relaxed mb-3">{nudge.body}</p>
+                    <a
+                      href={nudge.cta.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-block text-xs font-bold px-3 py-2 rounded-xl transition-opacity hover:opacity-90 ${
+                        isActive
+                          ? "bg-[#8C1D40] text-white"
+                          : "bg-zinc-200 text-zinc-600"
+                      }`}
+                    >
+                      {nudge.cta.label}
+                    </a>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Main dashboard ─────────────────────────────────────────────────────────────
-type Tab = "checkin" | "chat" | "ai";
+type Tab = "checkin" | "chat" | "ai" | "plan";
 
 function DashboardInner() {
   const [me, setMe]           = useState<Student | null>(null);
@@ -587,6 +720,7 @@ function DashboardInner() {
     { id: "checkin", label: "Check-in", icon: "🔥" },
     { id: "chat",    label: "Chat",     icon: "💬" },
     { id: "ai",      label: "AI Help",  icon: "✨" },
+    { id: "plan",    label: "Plan",     icon: "🗺️" },
   ];
 
   if (loading) {
@@ -695,7 +829,8 @@ function DashboardInner() {
               {activeTab === "chat" && !partner && (
                 <p className="text-zinc-400 text-sm text-center py-8">Waiting for your partner to join…</p>
               )}
-              {activeTab === "ai" && <AIHelpTab />}
+              {activeTab === "ai"   && <AIHelpTab isFirstGen={me.is_first_gen} />}
+              {activeTab === "plan" && <PlanTab />}
             </div>
           </div>
         </>

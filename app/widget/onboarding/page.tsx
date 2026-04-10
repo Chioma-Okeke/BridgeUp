@@ -240,9 +240,10 @@ function Screen3({
   );
 }
 
-// ── Screen 4: Comfort scale ────────────────────────────────────────────────────
-function Screen4({ comfort, setComfort, onBack, onNext }: {
+// ── Screen 4: Comfort scale + first-gen ───────────────────────────────────────
+function Screen4({ comfort, setComfort, isFirstGen, setIsFirstGen, onBack, onNext }: {
   comfort: number; setComfort: (v: number) => void;
+  isFirstGen: boolean; setIsFirstGen: (v: boolean) => void;
   onBack: () => void; onNext: () => void;
 }) {
   return (
@@ -287,6 +288,31 @@ function Screen4({ comfort, setComfort, onBack, onNext }: {
         </p>
       </div>
 
+      {/* First-gen question */}
+      <div className="flex flex-col gap-2">
+        <p className="text-white font-semibold text-sm text-center">
+          Are you a first-generation college student?
+        </p>
+        <p className="text-white/50 text-[10px] text-center -mt-1">
+          That means neither parent completed a 4-year degree.
+        </p>
+        <div className="flex gap-2">
+          {[
+            { label: "Yes, I am", value: true },
+            { label: "No", value: false },
+          ].map(({ label, value }) => (
+            <button key={label} type="button" onClick={() => setIsFirstGen(value)}
+              className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all ${
+                isFirstGen === value
+                  ? "bg-[#FFC627] border-[#FFC627] text-[#8C1D40]"
+                  : "bg-white/5 border-white/20 text-white/70 hover:bg-white/10"
+              }`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="flex gap-3 mt-auto">
         <button type="button" onClick={onBack}
           className="flex-1 bg-white/10 text-white font-semibold rounded-xl py-3 text-sm hover:bg-white/20 transition-colors">
@@ -303,11 +329,11 @@ function Screen4({ comfort, setComfort, onBack, onNext }: {
 
 // ── Screen 5: Confirm & save ───────────────────────────────────────────────────
 function Screen5({
-  name, selectedAvatar, nervousCourse, goal, excited, comfort,
+  name, selectedAvatar, nervousCourse, goal, excited, comfort, isFirstGen,
   checkinDay, setCheckinDay, onBack,
 }: {
   name: string; selectedAvatar: string; nervousCourse: string;
-  goal: string; excited: string; comfort: number;
+  goal: string; excited: string; comfort: number; isFirstGen: boolean;
   checkinDay: string; setCheckinDay: (v: string) => void; onBack: () => void;
 }) {
   const [saving, setSaving]               = useState(false);
@@ -331,6 +357,7 @@ function Screen5({
         comfort,
         checkin_day: checkinDay,
         room_id: ROOM_ID,
+        is_first_gen: isFirstGen,
       })
       .select()
       .single();
@@ -509,6 +536,7 @@ export default function Onboarding() {
   const [goal, setGoal]                     = useState("");
   const [excited, setExcited]               = useState("");
   const [comfort, setComfort]               = useState(3);
+  const [isFirstGen, setIsFirstGen]         = useState(false);
   const [checkinDay, setCheckinDay]         = useState("monday");
 
   useEffect(() => {
@@ -542,13 +570,14 @@ export default function Onboarding() {
         )}
         {step === 4 && (
           <Screen4 comfort={comfort} setComfort={setComfort}
+            isFirstGen={isFirstGen} setIsFirstGen={setIsFirstGen}
             onBack={() => setStep(3)} onNext={() => setStep(5)} />
         )}
         {step === 5 && (
           <Screen5
             name={name} selectedAvatar={selectedAvatar}
             nervousCourse={nervousCourse} goal={goal}
-            excited={excited} comfort={comfort}
+            excited={excited} comfort={comfort} isFirstGen={isFirstGen}
             checkinDay={checkinDay} setCheckinDay={setCheckinDay}
             onBack={() => setStep(4)} />
         )}
