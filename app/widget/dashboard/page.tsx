@@ -259,6 +259,30 @@ function CheckInTab({
         </div>
       )}
 
+      {/* Drop-in follow-up — shown after booking CTA tapped but not confirmed */}
+      {bookingPending && (
+        <div className="bg-white rounded-2xl border border-zinc-200 p-4 flex flex-col gap-2.5">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🚪</span>
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Still thinking about it?</p>
+          </div>
+          <p className="text-zinc-800 font-bold text-sm">ASN drop-in is open today 2–6 PM</p>
+          <p className="text-zinc-500 text-xs leading-relaxed">
+            No appointment needed — just walk in. You don&apos;t have to commit to anything, just show up once.
+          </p>
+          <div className="flex items-center gap-1.5 bg-zinc-50 rounded-xl px-3 py-2">
+            <span className="text-sm">🧑‍🎓</span>
+            <p className="text-zinc-500 text-xs">
+              <span className="font-semibold text-zinc-700">14 students</span> from your courses visited ASN this week.
+            </p>
+          </div>
+          <button type="button"
+            className="w-full bg-[#8C1D40] text-white font-bold rounded-xl py-2.5 text-sm hover:bg-[#6b1530] transition-colors">
+            I&apos;ll drop in today →
+          </button>
+        </div>
+      )}
+
       {/* My streaks at the bottom */}
       {/* <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-4">
         <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-3">Your Streaks</p>

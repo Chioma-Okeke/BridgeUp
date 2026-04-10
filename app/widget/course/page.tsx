@@ -176,6 +176,20 @@ function CourseWidgetInner() {
           </div>
         )}
 
+        {/* Peer usage social proof — always visible once a course is loaded */}
+        {me && (
+          <div className="flex items-center gap-2.5 bg-white rounded-2xl border border-zinc-100 shadow-sm px-4 py-3">
+            <div className="flex -space-x-1.5">
+              {["🧑‍💻","👩‍🔬","🧑‍🎨"].map((e, i) => (
+                <div key={i} className="w-6 h-6 rounded-full bg-[#8C1D40]/10 flex items-center justify-center text-xs border border-white">{e}</div>
+              ))}
+            </div>
+            <p className="text-zinc-600 text-xs leading-tight">
+              <span className="font-semibold text-zinc-800">14 students</span> from {courseName.split("—")[0].trim()} used ASN this week.
+            </p>
+          </div>
+        )}
+
         {/* Resource nudge card */}
         {struggling && !bookingPending && (
           <div className="bg-[#FFC627] rounded-2xl p-4 shadow-sm">
@@ -201,11 +215,30 @@ function CourseWidgetInner() {
         )}
 
         {bookingPending && (
-          <div className="bg-[#8C1D40]/8 border border-[#8C1D40]/20 rounded-2xl p-4 flex gap-3">
-            <span className="text-xl">⏳</span>
-            <div>
-              <p className="text-[#8C1D40] font-semibold text-sm">Booking request sent</p>
-              <p className="text-zinc-500 text-xs mt-0.5">Pending confirmation from ASN.</p>
+          <div className="flex flex-col gap-3">
+            <div className="bg-[#8C1D40]/8 border border-[#8C1D40]/20 rounded-2xl p-4 flex gap-3">
+              <span className="text-xl">⏳</span>
+              <div>
+                <p className="text-[#8C1D40] font-semibold text-sm">Booking request sent</p>
+                <p className="text-zinc-500 text-xs mt-0.5">Pending confirmation from ASN.</p>
+              </div>
+            </div>
+            {/* Drop-in follow-up */}
+            <div className="bg-white rounded-2xl border border-zinc-200 p-4 flex flex-col gap-2.5">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🚪</span>
+                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Can&apos;t wait? Drop in today</p>
+              </div>
+              <p className="text-zinc-800 font-bold text-sm">ASN is open 2–6 PM — no appointment needed</p>
+              <p className="text-zinc-500 text-xs leading-relaxed">
+                Just walk in. You don&apos;t need to schedule anything — drop-in is first come, first served.
+              </p>
+              <div className="flex items-center gap-1.5 bg-zinc-50 rounded-xl px-3 py-2">
+                <span className="text-sm">🧑‍🎓</span>
+                <p className="text-zinc-500 text-xs">
+                  <span className="font-semibold text-zinc-700">14 students</span> from your courses visited ASN this week.
+                </p>
+              </div>
             </div>
           </div>
         )}
