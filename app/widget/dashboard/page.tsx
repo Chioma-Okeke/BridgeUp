@@ -21,6 +21,60 @@ const MOCK_CHAT: { from: "me" | "partner"; text: string; time: string }[] = [
   { from: "partner", text: "3pm, they have drop-in. I'll send you the link", time: "Mon 10:04am" },
 ];
 
+// ── Milestone definitions ─────────────────────────────────────────────────────
+type MilestoneDef = {
+  id: string;
+  emoji: string;
+  label: string;
+  sub: string;
+  earnedLabel: string;
+};
+
+const MILESTONES: MilestoneDef[] = [
+  {
+    id: "roadmap",
+    emoji: "🗺️",
+    label: "Roadmap Unlocked",
+    sub: "Run your first DARS audit",
+    earnedLabel: "You ran your first DARS audit",
+  },
+  {
+    id: "streak_fire",
+    emoji: "🔥",
+    label: "On Fire",
+    sub: "Check in 5 days in a row",
+    earnedLabel: "5-day check-in streak achieved",
+  },
+  {
+    id: "first_step",
+    emoji: "🎯",
+    label: "First Step Taken",
+    sub: "Book your first ASN tutor session",
+    earnedLabel: "You booked your first tutor session",
+  },
+  {
+    id: "course_confirmed",
+    emoji: "✅",
+    label: "Course Confirmed",
+    sub: "Meet with your academic advisor",
+    earnedLabel: "You met with your advisor",
+  },
+  {
+    id: "self_care",
+    emoji: "💙",
+    label: "Taking Care of You",
+    sub: "Open a Counseling check-in",
+    earnedLabel: "You opened a counseling check-in",
+  },
+  {
+    id: "better_together",
+    emoji: "🤝",
+    label: "Better Together",
+    sub: "Attend a resource with your partner",
+    earnedLabel: "You showed up with Jordan",
+  },
+];
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 function StreakPill({ icon, label, count }: { icon: string; label: string; count: number }) {
   return (
@@ -51,23 +105,93 @@ function MilestoneToast({ emoji, label, onDismiss }: { emoji: string; label: str
   );
 }
 
+// ── Milestones full-panel view ────────────────────────────────────────────────
+function MilestonesView({ earnedIds, onBack }: { earnedIds: Set<string>; onBack: () => void }) {
+  const earned = MILESTONES.filter((m) => earnedIds.has(m.id));
+  const locked  = MILESTONES.filter((m) => !earnedIds.has(m.id));
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Back */}
+      <button
+        type="button"
+        onClick={onBack}
+        className="flex items-center gap-2 text-white/70 hover:text-white text-sm font-semibold mb-4 transition-colors self-start shrink-0"
+      >
+        ← Back
+      </button>
+
+      <div className="flex-1 bg-zinc-50 rounded-t-3xl overflow-y-auto">
+        <div className="p-4 flex flex-col gap-5">
+
+          {/* Earned */}
+          <div>
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">
+              Earned · {earned.length}/{MILESTONES.length}
+            </p>
+            {earned.length === 0 ? (
+              <p className="text-zinc-400 text-sm text-center py-6">Complete actions to earn your first badge!</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {earned.map((m) => (
+                  <div
+                    key={m.id}
+                    className="bg-white border-2 border-[#FFC627] rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-[0_0_14px_rgba(255,198,39,0.35)]"
+                  >
+                    <span className="text-4xl">{m.emoji}</span>
+                    <p className="text-[#8C1D40] font-bold text-xs text-center leading-tight">{m.label}</p>
+                    <p className="text-zinc-400 text-[10px] text-center leading-tight">{m.earnedLabel}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Locked */}
+          {locked.length > 0 && (
+            <div>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">
+                Locked · {locked.length} remaining
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {locked.map((m) => (
+                  <div
+                    key={m.id}
+                    className="bg-white border border-zinc-200 rounded-2xl p-3 flex flex-col items-center gap-1.5 opacity-40"
+                  >
+                    <span className="text-4xl grayscale">{m.emoji}</span>
+                    <p className="text-zinc-600 font-bold text-xs text-center leading-tight">{m.label}</p>
+                    <p className="text-zinc-400 text-[10px] text-center leading-tight">{m.sub}</p>
+                    <span className="text-zinc-300 text-sm mt-0.5">🔒</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Tab 1: Check-in ───────────────────────────────────────────────────────────
-function CheckInTab() {
+function CheckInTab({
+  resourceActivated,
+  onResourceActivated,
+}: {
+  resourceActivated: boolean;
+  onResourceActivated: () => void;
+}) {
   const [checkIn, setCheckIn] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [noteSent, setNoteSent] = useState(false);
   const [showResource, setShowResource] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
-  const [resourceActivated, setResourceActivated] = useState(false);
   const [struggling, setStruggling] = useState(false);
 
   function handleCheckIn(mood: string) {
     setCheckIn(mood);
     if (mood === "struggling") setTimeout(() => setShowResource(true), 600);
-  }
-
-  function handleSendNote() {
-    setNoteSent(true);
   }
 
   function handleStruggling() {
@@ -77,7 +201,7 @@ function CheckInTab() {
 
   function handleResourceCTA() {
     setShowResource(false);
-    setResourceActivated(true);
+    onResourceActivated();
     setShowMilestone(true);
   }
 
@@ -143,7 +267,6 @@ function CheckInTab() {
             </span>
           </p>
 
-          {/* Optional note to partner */}
           {!noteSent ? (
             <div className="flex flex-col gap-2">
               <textarea
@@ -156,7 +279,7 @@ function CheckInTab() {
               />
               <button
                 type="button"
-                onClick={handleSendNote}
+                onClick={() => setNoteSent(true)}
                 disabled={!note.trim()}
                 className="self-end bg-[#8C1D40] text-white text-xs font-bold px-4 py-2 rounded-xl disabled:opacity-40 hover:bg-[#6b1530] transition-colors"
               >
@@ -201,28 +324,6 @@ function CheckInTab() {
         </div>
       )}
 
-      {/* Milestones */}
-      <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-4">
-        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-3">Your Milestones</p>
-        <div className="flex flex-col gap-2">
-          {[
-            { emoji: "🗺️", label: "Roadmap Unlocked",   sub: "You ran your first DARS audit", active: true },
-            { emoji: "🎯", label: "First Step Taken",    sub: "Book your first ASN tutor session", active: resourceActivated },
-            { emoji: "✅", label: "Course Confirmed",    sub: "Meet with your advisor", active: false },
-            { emoji: "💙", label: "Taking Care of You",  sub: "Open a Counseling check-in", active: false },
-            { emoji: "🤝", label: "Better Together",     sub: "Attend a resource with your partner", active: false },
-          ].map(({ emoji, label, sub, active }) => (
-            <div key={label} className={`flex items-center gap-2 ${!active ? "opacity-30" : ""}`}>
-              <span className="text-lg">{emoji}</span>
-              <div>
-                <p className={`text-sm font-semibold ${active && label !== "Roadmap Unlocked" ? "text-[#8C1D40]" : "text-zinc-700"}`}>{label}</p>
-                <p className="text-xs text-zinc-400">{sub}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {showMilestone && (
         <MilestoneToast emoji="🎯" label="First Step Taken!" onDismiss={() => setShowMilestone(false)} />
       )}
@@ -244,8 +345,6 @@ function ChatTab() {
     if (!input.trim()) return;
     setMessages(prev => [...prev, { from: "me", text: input.trim(), time: "Now" }]);
     setInput("");
-
-    // Simulate Jordan reply
     setTimeout(() => {
       setMessages(prev => [...prev, {
         from: "partner",
@@ -257,7 +356,6 @@ function ChatTab() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Partner header */}
       <div className="flex items-center gap-3 bg-white rounded-2xl border border-zinc-100 p-3 mb-3">
         <div className="w-9 h-9 rounded-full bg-[#8C1D40]/10 flex items-center justify-center text-xl">🌟</div>
         <div>
@@ -267,7 +365,6 @@ function ChatTab() {
         <div className="ml-auto w-2 h-2 rounded-full bg-green-400" />
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto flex flex-col gap-3 pb-2" style={{ maxHeight: "320px" }}>
         {messages.map((msg, i) => (
           <div key={i} className={`flex flex-col ${msg.from === "me" ? "items-end" : "items-start"}`}>
@@ -286,7 +383,6 @@ function ChatTab() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className="flex gap-2 mt-3">
         <input
           type="text"
@@ -355,7 +451,6 @@ function AIHelpTab() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className="flex items-center gap-3 bg-white rounded-2xl border border-zinc-100 p-3 mb-3">
         <div className="w-9 h-9 rounded-full bg-[#FFC627] flex items-center justify-center text-xl">✨</div>
         <div>
@@ -364,7 +459,6 @@ function AIHelpTab() {
         </div>
       </div>
 
-      {/* Suggestions (shown when no messages) */}
       {messages.length === 0 && (
         <div className="flex flex-col gap-2 mb-3">
           <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wide px-1">Try asking...</p>
@@ -381,7 +475,6 @@ function AIHelpTab() {
         </div>
       )}
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto flex flex-col gap-3 pb-2" style={{ maxHeight: "280px" }}>
         {messages.map((msg, i) => (
           <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
@@ -440,7 +533,6 @@ function AIHelpTab() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className="flex gap-2 mt-3">
         <input
           type="text"
@@ -469,6 +561,13 @@ type Tab = "checkin" | "chat" | "ai";
 
 export default function DashboardWidget() {
   const [activeTab, setActiveTab] = useState<Tab>("checkin");
+  const [resourceActivated, setResourceActivated] = useState(false);
+  const [showMilestonesView, setShowMilestonesView] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  // Badges earned by default + unlocked by actions
+  const earnedIds = new Set<string>(["roadmap", "streak_fire"]);
+  if (resourceActivated) earnedIds.add("first_step");
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: "checkin", label: "Check-in", icon: "🔥" },
@@ -481,9 +580,51 @@ export default function DashboardWidget() {
 
       {/* Header */}
       <div className="flex items-center gap-3 px-5 pt-5 pb-3 shrink-0">
-        <div className="w-10 h-10 rounded-full bg-[#FFC627] flex items-center justify-center text-xl shadow">
-          {student.avatar}
+
+        {/* Clickable avatar */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setShowProfileMenu((v) => !v)}
+            className="w-10 h-10 rounded-full bg-[#FFC627] flex items-center justify-center text-xl shadow hover:ring-2 hover:ring-white/40 transition-all"
+            title="Profile"
+          >
+            {student.avatar}
+          </button>
+
+          {/* Profile dropdown */}
+          {showProfileMenu && (
+            <div className="absolute top-12 left-0 bg-white rounded-2xl shadow-xl border border-zinc-100 py-1 z-50 min-w-[190px]">
+              <div className="px-4 py-2.5 border-b border-zinc-100">
+                <p className="text-zinc-800 font-bold text-sm">{student.name}</p>
+                <p className="text-zinc-400 text-xs">{student.year}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMilestonesView(true);
+                  setShowProfileMenu(false);
+                }}
+                className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 hover:bg-[#8C1D40]/5 hover:text-[#8C1D40] font-medium flex items-center gap-2 transition-colors"
+              >
+                <span>🏅</span>
+                Your Milestones
+                <span className="ml-auto bg-[#FFC627] text-[#8C1D40] text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  {earnedIds.size}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowProfileMenu(false)}
+                className="w-full text-left px-4 py-2.5 text-sm text-zinc-400 hover:bg-zinc-50 flex items-center gap-2 transition-colors"
+              >
+                <span>⚙️</span>
+                Settings
+              </button>
+            </div>
+          )}
         </div>
+
         <div>
           <p className="text-white/60 text-xs">Welcome back</p>
           <p className="text-white font-bold text-base leading-tight">{student.name} · {student.year}</p>
@@ -495,40 +636,59 @@ export default function DashboardWidget() {
         </div>
       </div>
 
-      {/* Streaks */}
-      <div className="flex gap-2 px-5 pb-4 shrink-0">
-        <StreakPill icon="🔥" label="Check-ins"    count={myStreaks.checkin} />
-        <StreakPill icon="📚" label="Assignments"  count={myStreaks.assignment} />
-        <StreakPill icon="🤝" label="Help-seeking" count={myStreaks.helpSeeking} />
-      </div>
-
-      {/* Tab bar */}
-      <div className="flex px-5 gap-1 pb-3 shrink-0">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === tab.id
-                ? "bg-white text-[#8C1D40]"
-                : "bg-white/10 text-white/60 hover:bg-white/20"
-            }`}
-          >
-            <span>{tab.icon}</span>
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      <div className="flex-1 bg-zinc-50 rounded-t-3xl pr-2 overflow-y-auto">
-        <div className="p-4 h-full">
-          {activeTab === "checkin" && <CheckInTab />}
-          {activeTab === "chat"    && <ChatTab />}
-          {activeTab === "ai"      && <AIHelpTab />}
+      {/* Milestones full-panel view replaces tabs */}
+      {showMilestonesView ? (
+        <div className="flex-1 flex flex-col px-5 pb-4 overflow-hidden">
+          <MilestonesView earnedIds={earnedIds} onBack={() => setShowMilestonesView(false)} />
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Streaks */}
+          <div className="flex gap-2 px-5 pb-4 shrink-0">
+            <StreakPill icon="🔥" label="Check-ins"    count={myStreaks.checkin} />
+            <StreakPill icon="📚" label="Assignments"  count={myStreaks.assignment} />
+            <StreakPill icon="🤝" label="Help-seeking" count={myStreaks.helpSeeking} />
+          </div>
+
+          {/* Tab bar */}
+          <div className="flex px-5 gap-1 pb-3 shrink-0">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === tab.id
+                    ? "bg-white text-[#8C1D40]"
+                    : "bg-white/10 text-white/60 hover:bg-white/20"
+                }`}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <div className="flex-1 bg-zinc-50 rounded-t-3xl overflow-y-auto">
+            <div className="p-4 h-full">
+              {activeTab === "checkin" && (
+                <CheckInTab
+                  resourceActivated={resourceActivated}
+                  onResourceActivated={() => setResourceActivated(true)}
+                />
+              )}
+              {activeTab === "chat" && <ChatTab />}
+              {activeTab === "ai"   && <AIHelpTab />}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Backdrop to close profile menu */}
+      {showProfileMenu && (
+        <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)} />
+      )}
     </div>
   );
 }

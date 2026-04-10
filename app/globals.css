@@ -28,6 +28,7 @@ body {
 /* ── Thin red rounded scrollbar ── */
 ::-webkit-scrollbar {
   width: 4px;
+  margin-left: 4px;
 }
 
 ::-webkit-scrollbar-track {
