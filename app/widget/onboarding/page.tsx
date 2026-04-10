@@ -320,7 +320,7 @@ function Screen5({
     setError("");
 
     // Save this student to Supabase
-    const { data, error: insertErr } = await supabase
+    const { data, error: insertErr }: { data: Student | null; error: unknown } = await supabase
       .from("students")
       .insert({
         name,
@@ -346,7 +346,7 @@ function Screen5({
     localStorage.setItem("bridgeup_onboarded", "true");
 
     // Find partner — the other student in the same room
-    const { data: others } = await supabase
+    const { data: others }: { data: Student[] | null } = await supabase
       .from("students")
       .select("*")
       .eq("room_id", ROOM_ID)
@@ -355,7 +355,7 @@ function Screen5({
       .limit(1);
 
     if (others && others.length > 0) {
-      setPartner(others[0] as Student);
+      setPartner(others[0]);
     }
 
     setSaving(false);

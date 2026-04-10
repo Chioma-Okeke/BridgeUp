@@ -284,7 +284,7 @@ function ChatTab({ myId, partnerId }: { myId: UserId; partnerId: UserId }) {
       .select("*")
       .eq("room_id", ROOM_ID)
       .order("created_at", { ascending: true })
-      .then(({ data }) => { if (data) setMessages(data as ChatMessage[]); });
+      .then(({ data }: { data: ChatMessage[] | null }) => { if (data) setMessages(data); });
 
     // Subscribe to new messages
     const channel = supabase
@@ -292,8 +292,8 @@ function ChatTab({ myId, partnerId }: { myId: UserId; partnerId: UserId }) {
       .on("postgres_changes", {
         event: "INSERT", schema: "public", table: "messages",
         filter: `room_id=eq.${ROOM_ID}`,
-      }, (payload) => {
-        setMessages((prev) => [...prev, payload.new as ChatMessage]);
+      }, (payload: { new: ChatMessage }) => {
+        setMessages((prev) => [...prev, payload.new]);
       })
       .subscribe();
 
@@ -525,8 +525,8 @@ function DashboardInner() {
       .on("postgres_changes", {
         event: "INSERT", schema: "public", table: "room_events",
         filter: `room_id=eq.${ROOM_ID}`,
-      }, (payload) => {
-        handleEvent(payload.new as RoomEvent);
+      }, (payload: { new: RoomEvent }) => {
+        handleEvent(payload.new);
       })
       .subscribe();
 
