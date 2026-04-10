@@ -606,9 +606,10 @@ function PlanTab() {
         {SEMESTER_NUDGES.map((nudge, i) => {
           const isActive  = nudge === activeNudge;
           const isAllGood = allGoodWeeks.has(nudge.week);
-          const isPast    = !isActive && currentWeek > nudge.week;
-          const isFuture  = !isActive && currentWeek < nudge.week;
-          const isDone    = isActive ? week1Done : (isPast || isAllGood);
+          // With demo override (active = week 1), treat all other cards as upcoming
+          // so their CTA and "All good" are always visible, not hidden as past.
+          const isFuture  = !isActive && !isAllGood;
+          const isDone    = isActive ? week1Done : isAllGood;
 
           return (
             <div key={nudge.week} className="flex gap-3">
@@ -617,7 +618,6 @@ function PlanTab() {
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-base shrink-0 ${
                   isActive && !week1Done ? "bg-[#FFC627] shadow-[0_0_12px_rgba(255,198,39,0.5)]" :
                   isDone               ? "bg-green-100" :
-                  isAllGood            ? "bg-zinc-100" :
                   "bg-zinc-100"
                 }`}>
                   {isDone ? "✓" : nudge.icon}
@@ -642,14 +642,13 @@ function PlanTab() {
                     isAllGood            ? "text-zinc-400" :
                     "text-zinc-400"
                   }`}>
-                    {isDone && !isActive    ? (isAllGood ? "All good" : "Completed") :
-                     isDone && isActive     ? "Completed" :
-                     isActive              ? `In progress — ${checkedResources.size}/${WEEK1_RESOURCES.length} explored` :
-                     isFuture             ? `Week ${nudge.week}` :
-                     "Completed"}
+                    {isDone && isActive   ? "Completed" :
+                     isDone              ? (isAllGood ? "All good — not needed" : "Completed") :
+                     isActive            ? `In progress — ${checkedResources.size}/${WEEK1_RESOURCES.length} explored` :
+                     `Week ${nudge.week}`}
                   </p>
                   {isFuture && (
-                    <span className="text-[10px] text-zinc-400 font-medium">in {nudge.week - currentWeek}w</span>
+                    <span className="text-[10px] text-zinc-400 font-medium">Week {nudge.week}</span>
                   )}
                 </div>
 
