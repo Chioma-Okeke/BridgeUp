@@ -3,6 +3,33 @@
 import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 
+// ── Semester calendar ─────────────────────────────────────────────────────────
+// ASU Spring 2026: classes begin Jan 12, finals week Apr 27 – May 2
+const SEMESTER_START = new Date("2026-01-12");
+const FINALS_START   = new Date("2026-04-27");
+const TOTAL_WEEKS    = 16;
+
+function getSemesterWeek(): number {
+  const now = new Date();
+  const diffMs = now.getTime() - SEMESTER_START.getTime();
+  const week = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+  return Math.max(1, Math.min(TOTAL_WEEKS, week));
+}
+
+type SemesterPhase = "midterm" | "finals" | "normal";
+
+function getSemesterPhase(week: number): SemesterPhase {
+  if (week >= 5 && week <= 8)  return "midterm";  // midterm crunch
+  if (week >= 13)              return "finals";   // finals approach (fires now in demo)
+  return "normal";
+}
+
+function weeksUntilFinals(): number {
+  const now = new Date();
+  const diffMs = FINALS_START.getTime() - now.getTime();
+  return Math.max(0, Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000)));
+}
+
 // ── Mock course data ──────────────────────────────────────────────────────────
 type CourseData = {
   name: string;
@@ -63,6 +90,65 @@ const COURSES: Record<string, CourseData> = {
   },
 };
 
+// ── Calendar nudge card ───────────────────────────────────────────────────────
+function CalendarNudge({
+  phase,
+  courseCode,
+  onDismiss,
+}: {
+  phase: "midterm" | "finals";
+  courseCode: string;
+  onDismiss: () => void;
+}) {
+  const isFinals = phase === "finals";
+  const weeksLeft = weeksUntilFinals();
+
+  const title = isFinals
+    ? `Finals are ${weeksLeft === 0 ? "this week" : `${weeksLeft} week${weeksLeft === 1 ? "" : "s"} away`}`
+    : "Midterms are approaching";
+
+  const body = isFinals
+    ? `Tutoring spots fill up fast before finals. Book a session for ${courseCode} now — bring Jordan.`
+    : `Midterms are 2–3 weeks out. Getting ahead with a tutor now makes a real difference for ${courseCode}.`;
+
+  const icon = isFinals ? "🎓" : "📆";
+  const urgency = isFinals ? "bg-[#8C1D40]" : "bg-[#FFC627]";
+  const textColor = isFinals ? "text-white" : "text-[#8C1D40]";
+  const subColor = isFinals ? "text-white/70" : "text-[#8C1D40]/70";
+  const btnBg = isFinals ? "bg-[#FFC627] text-[#8C1D40]" : "bg-[#8C1D40] text-white";
+
+  return (
+    <div className={`${urgency} rounded-2xl p-4 shadow-sm`}>
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{icon}</span>
+          <p className={`text-[10px] font-bold uppercase tracking-widest ${subColor}`}>
+            {isFinals ? "Finals Alert" : "Midterm Alert"}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className={`${subColor} hover:opacity-100 opacity-60 text-sm font-bold leading-none`}
+          title="Dismiss"
+        >
+          ✕
+        </button>
+      </div>
+      <p className={`font-bold text-sm mb-1 ${textColor}`}>{title}</p>
+      <p className={`text-xs mb-3 ${subColor}`}>{body}</p>
+      <a
+        href="https://tutoring.asu.edu"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`block w-full text-center ${btnBg} font-bold rounded-xl py-2.5 text-sm hover:opacity-90 transition-opacity`}
+      >
+        Book ASN Tutoring →
+      </a>
+    </div>
+  );
+}
+
 // ── Milestone toast ───────────────────────────────────────────────────────────
 function MilestoneToast({
   emoji,
@@ -82,6 +168,7 @@ function MilestoneToast({
           Jordan has been notified. Better together.
         </p>
         <button
+          type="button"
           onClick={onDismiss}
           className="mt-2 bg-[#8C1D40] text-white rounded-full px-6 py-2 font-semibold text-sm hover:bg-[#6b1530] transition-colors"
         >
@@ -97,12 +184,15 @@ function CourseWidgetInner() {
   const params = useSearchParams();
   const courseId = params.get("courseId") ?? "default";
 
-  // Map known Canvas course IDs to demo data — otherwise use default
-  const course = COURSES[courseId] ?? COURSES["default"];
+  const course = COURSES[courseId] ?? COURSES["COURSE_ID_1"];
+
+  const currentWeek = getSemesterWeek();
+  const phase       = getSemesterPhase(currentWeek);
 
   const [activated, setActivated] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
   const [struggling, setStruggling] = useState(false);
+  const [calendarDismissed, setCalendarDismissed] = useState(false);
 
   function handleCTA() {
     setActivated(true);
@@ -113,6 +203,8 @@ function CourseWidgetInner() {
     setStruggling(true);
   }
 
+  const showCalendarNudge = phase !== "normal" && !calendarDismissed && !activated;
+
   return (
     <div className="h-screen w-full bg-zinc-50 flex flex-col overflow-hidden font-sans">
 
@@ -122,7 +214,7 @@ function CourseWidgetInner() {
           <span className="bg-[#FFC627] text-[#8C1D40] text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide">
             BridgeUp
           </span>
-          <span className="text-white/50 text-xs">Week 6</span>
+          <span className="text-white/50 text-xs">Week {currentWeek}</span>
         </div>
         <p className="text-white font-bold text-base">{course.code}</p>
         <p className="text-white/70 text-xs">{course.name}</p>
@@ -131,7 +223,16 @@ function CourseWidgetInner() {
       {/* Body */}
       <div className="flex-1 overflow-y-auto flex flex-col gap-4 p-4">
 
-        {/* Struggle signal */}
+        {/* Calendar nudge (midterm / finals) — shown first when active */}
+        {showCalendarNudge && (
+          <CalendarNudge
+            phase={phase}
+            courseCode={course.code}
+            onDismiss={() => setCalendarDismissed(true)}
+          />
+        )}
+
+        {/* Streak drop signal */}
         {course.streakDrop && !activated && (
           <div className="bg-[#8C1D40]/8 border border-[#8C1D40]/20 rounded-2xl p-4 flex gap-3">
             <span className="text-xl mt-0.5">📉</span>
@@ -144,7 +245,7 @@ function CourseWidgetInner() {
           </div>
         )}
 
-        {/* Resource nudge card */}
+        {/* Struggling signal sent */}
         {struggling && !activated && (
           <div className="bg-[#8C1D40]/8 border border-[#8C1D40]/20 rounded-2xl p-4 flex gap-3">
             <span className="text-xl">😮‍💨</span>
@@ -155,6 +256,7 @@ function CourseWidgetInner() {
           </div>
         )}
 
+        {/* Resource nudge card (streak or struggle) */}
         {(!activated && (course.streakDrop || struggling)) ? (
           <div className="bg-[#FFC627] rounded-2xl p-4 shadow-sm">
             <p className="text-[10px] font-semibold text-[#8C1D40] uppercase tracking-widest mb-1">
@@ -168,13 +270,14 @@ function CourseWidgetInner() {
             </p>
             <p className="text-zinc-700 text-xs mb-3">{course.nudge.description}</p>
             <button
+              type="button"
               onClick={handleCTA}
               className="w-full bg-[#8C1D40] text-white font-bold rounded-xl py-2.5 text-sm hover:bg-[#6b1530] transition-colors"
             >
               {course.nudge.cta}
             </button>
           </div>
-        ) : !activated ? null : (
+        ) : activated ? (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex gap-3">
             <span className="text-xl">✅</span>
             <div>
@@ -184,7 +287,7 @@ function CourseWidgetInner() {
               </p>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Partner status */}
         <div className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-4">
@@ -201,7 +304,6 @@ function CourseWidgetInner() {
             </div>
           </div>
 
-          {/* I'm struggling too */}
           {!struggling && (
             <button
               type="button"
@@ -214,29 +316,42 @@ function CourseWidgetInner() {
           )}
         </div>
 
-        {/* Week context */}
+        {/* Semester progress */}
         <div className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-4">
           <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-2">
             Semester Progress
           </p>
           <div className="flex justify-between mb-1">
-            <span className="text-xs text-zinc-500">Week 6 of 15</span>
-            <span className="text-xs text-[#8C1D40] font-medium">Mid-semester crunch</span>
+            <span className="text-xs text-zinc-500">Week {currentWeek} of {TOTAL_WEEKS}</span>
+            <span className={`text-xs font-medium ${
+              phase === "finals"  ? "text-[#8C1D40]" :
+              phase === "midterm" ? "text-amber-600"  :
+              "text-zinc-500"
+            }`}>
+              {phase === "finals"  ? "Finals season 🎓" :
+               phase === "midterm" ? "Midterm crunch 📆" :
+               "On track"}
+            </span>
           </div>
           <div className="w-full bg-zinc-100 rounded-full h-2">
             <div
-              className="bg-[#8C1D40] h-2 rounded-full"
-              style={{ width: "40%" }}
+              className={`h-2 rounded-full transition-all ${
+                phase === "finals" ? "bg-[#8C1D40]" : "bg-[#FFC627]"
+              }`}
+              style={{ width: `${(currentWeek / TOTAL_WEEKS) * 100}%` }}
             />
           </div>
           <p className="text-[10px] text-zinc-400 mt-2">
-            ASU Counseling check-in recommended this week.
+            {phase === "finals"
+              ? `Finals in ${weeksUntilFinals()} week${weeksUntilFinals() === 1 ? "" : "s"} — ASN tutoring recommended now.`
+              : phase === "midterm"
+              ? "Midterms approaching — book a tutor before spots fill up."
+              : "ASU Counseling check-in recommended this week."}
           </p>
         </div>
 
       </div>
 
-      {/* Milestone toast */}
       {showMilestone && (
         <MilestoneToast
           emoji={course.nudge.milestone.emoji}

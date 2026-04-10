@@ -27,8 +27,7 @@ body {
 
 /* ── Thin red rounded scrollbar ── */
 ::-webkit-scrollbar {
-  width: 4px;
-  margin-left: 4px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -38,8 +37,12 @@ body {
 ::-webkit-scrollbar-thumb {
   background: #8C1D40;
   border-radius: 99px;
+  /* transparent border creates spacing between thumb and content edge */
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #6b1530;
+  background-clip: content-box;
 }

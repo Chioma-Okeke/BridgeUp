@@ -89,7 +89,7 @@ function StreakPill({ icon, label, count }: { icon: string; label: string; count
 function MilestoneToast({ emoji, label, onDismiss }: { emoji: string; label: string; onDismiss: () => void }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
-      <div className="bg-white rounded-2xl shadow-2xl px-8 py-8 flex flex-col items-center gap-3 mx-4 animate-bounce">
+      <div className="bg-white rounded-2xl shadow-2xl px-8 py-8 flex flex-col items-center gap-3 mx-4">
         <span className="text-5xl">{emoji}</span>
         <p className="text-[#8C1D40] font-bold text-lg text-center">{label}</p>
         <p className="text-zinc-500 text-sm text-center">Jordan has been notified. Help-seeking is a win.</p>
@@ -670,7 +670,7 @@ export default function DashboardWidget() {
           </div>
 
           {/* Tab content */}
-          <div className="flex-1 bg-zinc-50 rounded-t-3xl overflow-y-auto">
+          <div className="flex-1 bg-zinc-50 rounded-t-3xl mb-4 overflow-y-auto">
             <div className="p-4 h-full">
               {activeTab === "checkin" && (
                 <CheckInTab
