@@ -561,10 +561,34 @@ const SEMESTER_NUDGES: SemesterNudge[] = [
   },
 ];
 
+// Week 1 resource checklist items
+const WEEK1_RESOURCES = [
+  { id: 0, icon: "📐", name: "ASN Subject Tutoring",  desc: "Free drop-in tutoring for any subject", href: "https://tutoring.asu.edu" },
+  { id: 1, icon: "✍️", name: "ASU Writing Centers",   desc: "Help at any stage — brainstorm to final draft", href: "https://writingcenters.asu.edu" },
+  { id: 2, icon: "💙", name: "ASU Counseling",        desc: "Free mental health support for ASU students", href: "https://eoss.asu.edu/counseling" },
+];
+
 function PlanTab() {
   const currentWeek = getPlanWeek();
-  // The active nudge is the most recent one whose week has arrived
-  const activeNudge = [...SEMESTER_NUDGES].reverse().find((n) => currentWeek >= n.week);
+
+  // For demo: force week 1 as the active nudge so judges see the in-progress flow
+  const DEMO_ACTIVE_WEEK = 1;
+  const activeNudge = SEMESTER_NUDGES.find((n) => n.week === DEMO_ACTIVE_WEEK)!;
+
+  // Week 1 checklist state — start with 1 already checked to show in-progress
+  const [checkedResources, setCheckedResources] = useState<Set<number>>(new Set([0]));
+  // Tracks which non-week-1 nudges the student marked "all good"
+  const [allGoodWeeks, setAllGoodWeeks] = useState<Set<number>>(new Set());
+
+  function toggleResource(id: number) {
+    setCheckedResources((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
+      return next;
+    });
+  }
+
+  const week1Done = checkedResources.size === WEEK1_RESOURCES.length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -580,58 +604,122 @@ function PlanTab() {
       {/* Timeline */}
       <div className="flex flex-col">
         {SEMESTER_NUDGES.map((nudge, i) => {
-          const isPast    = currentWeek > nudge.week && nudge !== activeNudge;
           const isActive  = nudge === activeNudge;
-          const isFuture  = currentWeek < nudge.week;
+          const isAllGood = allGoodWeeks.has(nudge.week);
+          const isPast    = !isActive && currentWeek > nudge.week;
+          const isFuture  = !isActive && currentWeek < nudge.week;
+          const isDone    = isActive ? week1Done : (isPast || isAllGood);
 
           return (
             <div key={nudge.week} className="flex gap-3">
               {/* Timeline spine */}
               <div className="flex flex-col items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-base shrink-0 ${
-                  isActive  ? "bg-[#FFC627] shadow-[0_0_12px_rgba(255,198,39,0.5)]" :
-                  isPast    ? "bg-green-100" :
+                  isActive && !week1Done ? "bg-[#FFC627] shadow-[0_0_12px_rgba(255,198,39,0.5)]" :
+                  isDone               ? "bg-green-100" :
+                  isAllGood            ? "bg-zinc-100" :
                   "bg-zinc-100"
                 }`}>
-                  {isPast ? "✓" : nudge.icon}
+                  {isDone ? "✓" : nudge.icon}
                 </div>
                 {i < SEMESTER_NUDGES.length - 1 && (
-                  <div className={`w-0.5 flex-1 my-1 min-h-4 ${isPast ? "bg-green-200" : "bg-zinc-200"}`} />
+                  <div className={`w-0.5 flex-1 my-1 min-h-4 ${isDone ? "bg-green-200" : "bg-zinc-200"}`} />
                 )}
               </div>
 
               {/* Card */}
               <div className={`flex-1 mb-4 rounded-2xl p-3.5 border ${
-                isActive  ? "bg-white border-[#FFC627]/60 shadow-sm" :
-                isPast    ? "bg-zinc-50 border-zinc-100 opacity-60" :
+                isActive && !week1Done ? "bg-white border-[#FFC627]/60 shadow-sm" :
+                isDone                ? "bg-zinc-50 border-zinc-100 opacity-60" :
+                isFuture              ? "bg-zinc-50 border-zinc-100" :
                 "bg-zinc-50 border-zinc-100"
               }`}>
+                {/* Card header */}
                 <div className="flex items-center justify-between mb-1">
                   <p className={`text-[10px] font-bold uppercase tracking-widest ${
-                    isActive ? "text-[#8C1D40]" : isPast ? "text-green-600" : "text-zinc-400"
+                    isActive && !week1Done ? "text-[#8C1D40]" :
+                    isDone               ? "text-green-600" :
+                    isAllGood            ? "text-zinc-400" :
+                    "text-zinc-400"
                   }`}>
-                    {isPast ? "Completed" : isActive ? "Now — Week " + nudge.week : "Week " + nudge.week}
+                    {isDone && !isActive    ? (isAllGood ? "All good" : "Completed") :
+                     isDone && isActive     ? "Completed" :
+                     isActive              ? `In progress — ${checkedResources.size}/${WEEK1_RESOURCES.length} explored` :
+                     isFuture             ? `Week ${nudge.week}` :
+                     "Completed"}
                   </p>
                   {isFuture && (
                     <span className="text-[10px] text-zinc-400 font-medium">in {nudge.week - currentWeek}w</span>
                   )}
                 </div>
-                <p className={`font-bold text-sm mb-1 ${isPast ? "text-zinc-500" : "text-zinc-800"}`}>{nudge.title}</p>
-                {!isPast && (
+
+                <p className={`font-bold text-sm mb-1 ${isDone && !isActive ? "text-zinc-500" : "text-zinc-800"}`}>
+                  {nudge.title}
+                </p>
+
+                {/* Week 1: resource checklist */}
+                {isActive && (
                   <>
                     <p className="text-zinc-500 text-xs leading-relaxed mb-3">{nudge.body}</p>
-                    <a
-                      href={nudge.cta.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`inline-block text-xs font-bold px-3 py-2 rounded-xl transition-opacity hover:opacity-90 ${
-                        isActive
-                          ? "bg-[#8C1D40] text-white"
-                          : "bg-zinc-200 text-zinc-600"
-                      }`}
-                    >
-                      {nudge.cta.label}
-                    </a>
+                    <div className="flex flex-col gap-2 mb-3">
+                      {WEEK1_RESOURCES.map((res) => {
+                        const checked = checkedResources.has(res.id);
+                        return (
+                          <div key={res.id} className={`flex items-center gap-3 rounded-xl p-2.5 border transition-all ${
+                            checked ? "bg-green-50 border-green-200" : "bg-zinc-50 border-zinc-200"
+                          }`}>
+                            <button
+                              type="button"
+                              onClick={() => toggleResource(res.id)}
+                              className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center text-[10px] font-bold transition-all ${
+                                checked ? "bg-green-500 border-green-500 text-white" : "border-zinc-300 hover:border-[#8C1D40]"
+                              }`}
+                            >
+                              {checked && "✓"}
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-xs font-semibold leading-tight ${checked ? "text-zinc-400 line-through" : "text-zinc-700"}`}>
+                                {res.icon} {res.name}
+                              </p>
+                              <p className="text-[10px] text-zinc-400 leading-tight mt-0.5">{res.desc}</p>
+                            </div>
+                            {!checked && (
+                              <a href={res.href} target="_blank" rel="noopener noreferrer"
+                                className="text-[10px] font-bold text-[#8C1D40] hover:underline shrink-0">
+                                Visit →
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {week1Done && (
+                      <p className="text-xs text-green-600 font-semibold">🎉 You know where to go before you need them!</p>
+                    )}
+                  </>
+                )}
+
+                {/* Non-week-1 cards: body + CTA + All good button */}
+                {!isActive && !isDone && (
+                  <>
+                    <p className="text-zinc-500 text-xs leading-relaxed mb-3">{nudge.body}</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <a
+                        href={nudge.cta.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold px-3 py-2 rounded-xl bg-zinc-200 text-zinc-600 hover:opacity-90 transition-opacity"
+                      >
+                        {nudge.cta.label}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setAllGoodWeeks((prev) => new Set([...prev, nudge.week]))}
+                        className="text-xs font-bold px-3 py-2 rounded-xl bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors"
+                      >
+                        ✓ All good
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
@@ -804,7 +892,7 @@ function DashboardInner() {
           <div className="flex px-5 gap-1 pb-3 shrink-0">
             {tabs.map(tab => (
               <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-xs font-bold transition-all ${
                   activeTab === tab.id ? "bg-white text-[#8C1D40]" : "bg-white/10 text-white/60 hover:bg-white/20"
                 }`}>
                 <span>{tab.icon}</span><span>{tab.label}</span>
