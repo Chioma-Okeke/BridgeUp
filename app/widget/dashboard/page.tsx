@@ -3,18 +3,9 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useRef, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { supabase, ROOM_ID } from "@/lib/supabase";
-import type { RoomEvent, ChatMessage } from "@/lib/supabase";
-
-// ── Identity helpers ───────────────────────────────────────────────────────────
-type UserId = "maria" | "jordan";
-
-const USERS: Record<UserId, { name: string; avatar: string; year: string }> = {
-  maria:  { name: "Maria",  avatar: "🌵", year: "Sophomore" },
-  jordan: { name: "Jordan", avatar: "🌟", year: "Junior" },
-};
+import type { RoomEvent, ChatMessage, Student } from "@/lib/supabase";
 
 // ── Milestone definitions ─────────────────────────────────────────────────────
 type MilestoneDef = { id: string; emoji: string; label: string; sub: string; earnedLabel: string };
@@ -106,15 +97,13 @@ function MilestonesView({ earnedIds, onBack }: { earnedIds: Set<string>; onBack:
 
 // ── Tab 1: Check-in ───────────────────────────────────────────────────────────
 function CheckInTab({
-  myId, partnerId, resourceActivated, onResourceActivated,
+  myId, me, partner, resourceActivated, onResourceActivated,
   partnerStruggling, partnerCheckedIn,
 }: {
-  myId: UserId; partnerId: UserId;
+  myId: string; me: Student; partner: Student;
   resourceActivated: boolean; onResourceActivated: () => void;
   partnerStruggling: boolean; partnerCheckedIn: boolean;
 }) {
-  const me      = USERS[myId];
-  const partner = USERS[partnerId];
   const myStreaks = { checkin: 5, assignment: 7, helpSeeking: 2 };
 
   const [checkIn, setCheckIn]             = useState<string | null>(null);
@@ -271,8 +260,7 @@ function CheckInTab({
 }
 
 // ── Tab 2: Chat (real-time) ───────────────────────────────────────────────────
-function ChatTab({ myId, partnerId }: { myId: UserId; partnerId: UserId }) {
-  const partner = USERS[partnerId];
+function ChatTab({ myId, partner }: { myId: string; partner: Student }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput]       = useState("");
   const bottomRef               = useRef<HTMLDivElement>(null);
@@ -481,45 +469,62 @@ function AIHelpTab() {
   );
 }
 
-// ── Main dashboard (inner, uses useSearchParams) ───────────────────────────────
+// ── Main dashboard ─────────────────────────────────────────────────────────────
 type Tab = "checkin" | "chat" | "ai";
 
 function DashboardInner() {
-  const params   = useSearchParams();
-  const myId     = (params.get("user") ?? "maria") as UserId;
-  const partnerId: UserId = myId === "maria" ? "jordan" : "maria";
-  const me       = USERS[myId];
+  const [me, setMe]           = useState<Student | null>(null);
+  const [partner, setPartner] = useState<Student | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [activeTab, setActiveTab]         = useState<Tab>("checkin");
-  const [resourceActivated, setResourceActivated] = useState(false);
+  const [activeTab, setActiveTab]                   = useState<Tab>("checkin");
+  const [resourceActivated, setResourceActivated]   = useState(false);
   const [showMilestonesView, setShowMilestonesView] = useState(false);
-  const [showProfileMenu, setShowProfileMenu]     = useState(false);
+  const [showProfileMenu, setShowProfileMenu]       = useState(false);
+  const [partnerStruggling, setPartnerStruggling]   = useState(false);
+  const [partnerCheckedIn, setPartnerCheckedIn]     = useState(false);
+  const [incomingAlert, setIncomingAlert]           = useState<string | null>(null);
 
-  // Real-time state from partner
-  const [partnerStruggling, setPartnerStruggling] = useState(false);
-  const [partnerCheckedIn, setPartnerCheckedIn]   = useState(false);
-  const [incomingAlert, setIncomingAlert]         = useState<string | null>(null);
+  // Load identity from localStorage → Supabase on mount
+  useEffect(() => {
+    (async () => {
+      const storedId = localStorage.getItem("bridgeup_student_id");
+      if (!storedId) { setLoading(false); return; }
+
+      const { data: self }: { data: Student | null } = await supabase
+        .from("students").select("*").eq("id", storedId).single();
+      if (self) setMe(self);
+
+      const { data: others }: { data: Student[] | null } = await supabase
+        .from("students").select("*").eq("room_id", ROOM_ID).neq("id", storedId)
+        .order("created_at", { ascending: false }).limit(1);
+      if (others && others.length > 0) setPartner(others[0]);
+
+      setLoading(false);
+    })();
+  }, []);
 
   const earnedIds = new Set<string>(["roadmap", "streak_fire"]);
   if (resourceActivated) earnedIds.add("first_step");
 
   const handleEvent = useCallback((event: RoomEvent) => {
-    if (event.user_id === myId) return; // ignore own events
+    if (!me || event.user_id === me.id) return;
     if (event.event_type === "struggling") {
       setPartnerStruggling(true);
-      setIncomingAlert(`${USERS[partnerId].name} is struggling too — a resource has been surfaced for both of you.`);
+      setIncomingAlert(`Your partner is struggling too — a resource has been surfaced for both of you.`);
     }
     if (event.event_type === "checkin") {
       setPartnerCheckedIn(true);
       const mood = (event.payload as { mood?: string }).mood ?? "something";
-      setIncomingAlert(`${USERS[partnerId].name} just checked in — feeling ${mood}.`);
+      setIncomingAlert(`Your partner just checked in — feeling ${mood}.`);
     }
     if (event.event_type === "booking") {
-      setIncomingAlert(`${USERS[partnerId].name} just booked a tutoring session — you can join them!`);
+      setIncomingAlert(`Your partner just booked a tutoring session — you can join them!`);
     }
-  }, [myId, partnerId]);
+  }, [me]);
 
   useEffect(() => {
+    if (!me) return;
     const channel = supabase
       .channel("room_events")
       .on("postgres_changes", {
@@ -531,13 +536,29 @@ function DashboardInner() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [handleEvent]);
+  }, [me, handleEvent]);
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: "checkin", label: "Check-in", icon: "🔥" },
     { id: "chat",    label: "Chat",     icon: "💬" },
     { id: "ai",      label: "AI Help",  icon: "✨" },
   ];
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full bg-[#8C1D40] flex items-center justify-center">
+        <p className="text-white/60 text-sm">Loading your dashboard…</p>
+      </div>
+    );
+  }
+
+  if (!me) {
+    return (
+      <div className="h-screen w-full bg-[#8C1D40] flex items-center justify-center px-8">
+        <p className="text-white text-sm text-center">No profile found. Please complete onboarding first.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-full bg-[#8C1D40] flex flex-col overflow-hidden font-sans">
@@ -564,7 +585,7 @@ function DashboardInner() {
             <div className="absolute top-12 left-0 bg-white rounded-2xl shadow-xl border border-zinc-100 py-1 z-50 min-w-[190px]">
               <div className="px-4 py-2.5 border-b border-zinc-100">
                 <p className="text-zinc-800 font-bold text-sm">{me.name}</p>
-                <p className="text-zinc-400 text-xs">{me.year}</p>
+                <p className="text-zinc-400 text-xs">{me.checkin_day}</p>
               </div>
               <button type="button" onClick={() => { setShowMilestonesView(true); setShowProfileMenu(false); }}
                 className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 hover:bg-[#8C1D40]/5 hover:text-[#8C1D40] font-medium flex items-center gap-2 transition-colors">
@@ -580,7 +601,7 @@ function DashboardInner() {
         </div>
         <div>
           <p className="text-white/60 text-xs">Welcome back</p>
-          <p className="text-white font-bold text-base leading-tight">{me.name} · {me.year}</p>
+          <p className="text-white font-bold text-base leading-tight">{me.name}</p>
         </div>
         <div className="ml-auto">
           <span className="bg-[#FFC627] text-[#8C1D40] text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide">BridgeUp</span>
@@ -615,17 +636,23 @@ function DashboardInner() {
           {/* Tab content */}
           <div className="flex-1 bg-zinc-50 rounded-t-3xl mb-4 overflow-y-auto">
             <div className="p-4 h-full">
-              {activeTab === "checkin" && (
+              {activeTab === "checkin" && partner && (
                 <CheckInTab
-                  myId={myId} partnerId={partnerId}
+                  myId={me.id} me={me} partner={partner}
                   resourceActivated={resourceActivated}
                   onResourceActivated={() => setResourceActivated(true)}
                   partnerStruggling={partnerStruggling}
                   partnerCheckedIn={partnerCheckedIn}
                 />
               )}
-              {activeTab === "chat" && <ChatTab myId={myId} partnerId={partnerId} />}
-              {activeTab === "ai"   && <AIHelpTab />}
+              {activeTab === "checkin" && !partner && (
+                <p className="text-zinc-400 text-sm text-center py-8">Waiting for your partner to join…</p>
+              )}
+              {activeTab === "chat" && partner && <ChatTab myId={me.id} partner={partner} />}
+              {activeTab === "chat" && !partner && (
+                <p className="text-zinc-400 text-sm text-center py-8">Waiting for your partner to join…</p>
+              )}
+              {activeTab === "ai" && <AIHelpTab />}
             </div>
           </div>
         </>
