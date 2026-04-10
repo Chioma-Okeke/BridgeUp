@@ -97,11 +97,10 @@ function MilestonesView({ earnedIds, onBack }: { earnedIds: Set<string>; onBack:
 
 // ── Tab 1: Check-in ───────────────────────────────────────────────────────────
 function CheckInTab({
-  myId, me, partner, resourceActivated, onResourceActivated,
+  myId, me, partner,
   partnerStruggling, partnerCheckedIn,
 }: {
   myId: string; me: Student; partner: Student;
-  resourceActivated: boolean; onResourceActivated: () => void;
   partnerStruggling: boolean; partnerCheckedIn: boolean;
 }) {
   const myStreaks = { checkin: 5, assignment: 7, helpSeeking: 2 };
@@ -112,9 +111,12 @@ function CheckInTab({
   const [selfStruggling, setSelfStruggling] = useState(false);
   const [selfMoodStruggling, setSelfMoodStruggling] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
+  const [bookingPending, setBookingPending] = useState(false);
+  const [nudgeDismissed, setNudgeDismissed] = useState(false);
+  const [strugglingDismissed, setStrugglingDismissed] = useState(false);
 
   // Derive: show resource card if either the user or their partner signalled struggling
-  const showResource = (selfStruggling || partnerStruggling || selfMoodStruggling) && !resourceActivated;
+  const showResource = (selfStruggling || partnerStruggling || selfMoodStruggling) && !bookingPending && !nudgeDismissed;
 
   async function handleCheckIn(mood: string) {
     setCheckIn(mood);
@@ -133,10 +135,9 @@ function CheckInTab({
 
   async function handleResourceCTA() {
     await supabase.from("room_events").insert({
-      room_id: ROOM_ID, user_id: myId, event_type: "booking", payload: { resource: "ASN Tutoring" },
+      room_id: ROOM_ID, user_id: myId, event_type: "booking", payload: { resource: "ASU Tutoring" },
     });
-    onResourceActivated();
-    setShowMilestone(true);
+    setBookingPending(true);
   }
 
   return (
@@ -148,17 +149,19 @@ function CheckInTab({
           <div className="w-12 h-12 rounded-full bg-[#8C1D40]/10 flex items-center justify-center text-2xl">{partner.avatar}</div>
           <div className="flex-1">
             <p className="font-bold text-zinc-800">{partner.name}</p>
-            <p className="text-zinc-500 text-xs leading-tight">MAT 265 — Calculus for Engineers</p>
+            <p className="text-zinc-500 text-xs leading-tight">{partner.nervous_course ?? "No course listed"}</p>
           </div>
           <div className="flex flex-col items-center">
             <div className={`w-2.5 h-2.5 rounded-full ${partnerCheckedIn ? "bg-green-400" : "bg-zinc-300"}`} />
             <p className="text-[10px] text-zinc-400 mt-1">{partnerCheckedIn ? "Checked in" : "Pending"}</p>
           </div>
         </div>
-        {partnerStruggling && (
+        {partnerStruggling && !strugglingDismissed && (
           <div className="mt-3 pt-3 border-t border-zinc-100 flex items-center gap-2">
             <span className="text-sm">😮‍💨</span>
-            <p className="text-[#8C1D40] text-xs font-semibold">{partner.name} is struggling too — you&apos;re not alone.</p>
+            <p className="text-[#8C1D40] text-xs font-semibold flex-1">{partner.name} is struggling too — you&apos;re not alone.</p>
+            <button type="button" onClick={() => setStrugglingDismissed(true)}
+              className="text-zinc-400 hover:text-zinc-600 text-xs font-bold leading-none">✕</button>
           </div>
         )}
         <div className="flex gap-3 mt-3 pt-3 border-t border-zinc-100">
@@ -203,7 +206,11 @@ function CheckInTab({
                 title="Note for your partner" rows={2}
                 className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-sm text-zinc-700 placeholder-zinc-400 resize-none focus:outline-none focus:border-[#8C1D40]/40 transition-colors"
               />
-              <button type="button" onClick={() => setNoteSent(true)} disabled={!note.trim()}
+              <button type="button" onClick={async () => {
+                if (!note.trim()) return;
+                await supabase.from("messages").insert({ room_id: ROOM_ID, from_user: myId, text: note.trim() });
+                setNoteSent(true);
+              }} disabled={!note.trim()}
                 className="self-end bg-[#8C1D40] text-white text-xs font-bold px-4 py-2 rounded-xl disabled:opacity-40 hover:bg-[#6b1530] transition-colors">
                 Send to {partner.name} →
               </button>
@@ -211,8 +218,8 @@ function CheckInTab({
           ) : (
             <p className="text-xs text-green-600 font-medium">✓ Note sent to {partner.name}</p>
           )}
-          {resourceActivated && (
-            <p className="text-xs text-green-600 font-medium">🎯 You booked a tutor session. Milestone earned!</p>
+          {bookingPending && (
+            <p className="text-xs text-amber-600 font-medium">⏳ Booking request sent — pending confirmation.</p>
           )}
         </div>
       )}
@@ -226,31 +233,41 @@ function CheckInTab({
       )}
 
       {/* Resource nudge */}
-      {showResource && !resourceActivated && (
+      {showResource && (
         <div className="bg-[#FFC627] rounded-2xl p-4 shadow-sm">
-          <p className="text-[10px] font-semibold text-[#8C1D40] uppercase tracking-widest mb-1">Resource Nudge</p>
-          <p className="text-zinc-800 font-bold text-sm mb-1">ASN Tutoring — MAT 265</p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[10px] font-semibold text-[#8C1D40] uppercase tracking-widest">Resource Nudge</p>
+            <button type="button" onClick={() => setNudgeDismissed(true)}
+              className="text-[#8C1D40]/50 hover:text-[#8C1D40] text-xs font-bold leading-none">✕</button>
+          </div>
+          <p className="text-zinc-800 font-bold text-sm mb-1">ASN Tutoring — {partner.nervous_course ?? "your course"}</p>
           <p className="text-zinc-700 text-xs mb-3">
             {partnerStruggling
               ? `${partner.name} is also struggling. Book a free session together.`
-              : `${me.name} and ${partner.name} can both drop in — it&apos;s free.`}
+              : `${me.name} and ${partner.name} can both drop in — it's free.`}
           </p>
-          <button type="button" onClick={handleResourceCTA}
-            className="w-full bg-[#8C1D40] text-white font-bold rounded-xl py-2.5 text-sm hover:bg-[#6b1530] transition-colors">
-            Book with {partner.name} →
-          </button>
+          {bookingPending ? (
+            <div className="w-full bg-[#8C1D40]/10 border border-[#8C1D40]/20 rounded-xl py-2.5 text-center text-[#8C1D40] text-sm font-semibold">
+              ⏳ Pending confirmation…
+            </div>
+          ) : (
+            <button type="button" onClick={handleResourceCTA}
+              className="w-full bg-[#8C1D40] text-white font-bold rounded-xl py-2.5 text-sm hover:bg-[#6b1530] transition-colors">
+              Book with {partner.name} →
+            </button>
+          )}
         </div>
       )}
 
       {/* My streaks at the bottom */}
-      <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-4">
+      {/* <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-4">
         <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-3">Your Streaks</p>
         <div className="flex gap-3">
           <span className="flex items-center gap-1.5 text-xs text-zinc-600">🔥 {myStreaks.checkin} check-ins</span>
           <span className="flex items-center gap-1.5 text-xs text-zinc-600">📚 {myStreaks.assignment} assignments</span>
           <span className="flex items-center gap-1.5 text-xs text-zinc-600">🤝 {myStreaks.helpSeeking} help</span>
         </div>
-      </div>
+      </div> */}
 
       {showMilestone && (
         <MilestoneToast emoji="🎯" label="First Step Taken!" onDismiss={() => setShowMilestone(false)} />
@@ -310,7 +327,7 @@ function ChatTab({ myId, partner }: { myId: string; partner: Student }) {
         <div className="ml-auto w-2 h-2 rounded-full bg-green-400" />
       </div>
 
-      <div className="flex-1 overflow-y-auto flex flex-col gap-3 pb-2 max-h-80">
+      <div className="flex-1 overflow-y-auto flex flex-col gap-3 pb-2">
         {messages.length === 0 && (
           <p className="text-zinc-400 text-xs text-center py-8">No messages yet — say hi 👋</p>
         )}
@@ -406,7 +423,7 @@ function AIHelpTab() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto flex flex-col gap-3 pb-2 max-h-72">
+      <div className="flex-1 overflow-y-auto flex flex-col gap-3 pb-2">
         {messages.map((msg, i) => (
           <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
             <div className={`max-w-[85%] rounded-2xl px-3 py-2.5 text-sm leading-relaxed ${
@@ -478,7 +495,6 @@ function DashboardInner() {
   const [loading, setLoading] = useState(true);
 
   const [activeTab, setActiveTab]                   = useState<Tab>("checkin");
-  const [resourceActivated, setResourceActivated]   = useState(false);
   const [showMilestonesView, setShowMilestonesView] = useState(false);
   const [showProfileMenu, setShowProfileMenu]       = useState(false);
   const [partnerStruggling, setPartnerStruggling]   = useState(false);
@@ -505,13 +521,12 @@ function DashboardInner() {
   }, []);
 
   const earnedIds = new Set<string>(["roadmap", "streak_fire"]);
-  if (resourceActivated) earnedIds.add("first_step");
 
   const handleEvent = useCallback((event: RoomEvent) => {
     if (!me || event.user_id === me.id) return;
     if (event.event_type === "struggling") {
       setPartnerStruggling(true);
-      setIncomingAlert(`Your partner is struggling too — a resource has been surfaced for both of you.`);
+      setIncomingAlert(`Your partner is struggling too, a resource has been surfaced for both of you.`);
     }
     if (event.event_type === "checkin") {
       setPartnerCheckedIn(true);
@@ -522,6 +537,12 @@ function DashboardInner() {
       setIncomingAlert(`Your partner just booked a tutoring session — you can join them!`);
     }
   }, [me]);
+
+  useEffect(() => {
+    if (!incomingAlert) return;
+    const t = setTimeout(() => setIncomingAlert(null), 5000);
+    return () => clearTimeout(t);
+  }, [incomingAlert]);
 
   useEffect(() => {
     if (!me) return;
@@ -639,8 +660,6 @@ function DashboardInner() {
               {activeTab === "checkin" && partner && (
                 <CheckInTab
                   myId={me.id} me={me} partner={partner}
-                  resourceActivated={resourceActivated}
-                  onResourceActivated={() => setResourceActivated(true)}
                   partnerStruggling={partnerStruggling}
                   partnerCheckedIn={partnerCheckedIn}
                 />
