@@ -233,7 +233,7 @@ function CourseWidgetInner() {
                   className="mt-3 w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#8C1D40]/30 hover:border-[#8C1D40] rounded-xl py-2.5 text-[#8C1D40] font-semibold text-sm transition-all hover:bg-[#8C1D40]/5"
                 >
                   <span>😮‍💨</span>
-                  I&apos;m struggling too
+                  I&apos;m struggling too.
                 </button>
               )}
             </>
