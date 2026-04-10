@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 const student = { name: "Maria", avatar: "🌵", year: "Sophomore" };
@@ -391,7 +392,39 @@ function AIHelpTab() {
                   : "bg-[#FFC627]/20 border border-[#FFC627]/40 text-zinc-700 rounded-bl-sm"
               }`}
             >
-              {msg.content}
+              {msg.role === "user" ? (
+                msg.content
+              ) : (
+                <ReactMarkdown
+                  components={{
+                    p:      ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                    strong: ({ children }) => <strong className="font-bold text-[#8C1D40]">{children}</strong>,
+                    ul:     ({ children }) => <ul className="mt-1 mb-2 flex flex-col gap-1">{children}</ul>,
+                    ol:     ({ children }) => <ol className="mt-1 mb-2 flex flex-col gap-1 list-decimal pl-4">{children}</ol>,
+                    li: ({ children }) => (
+                      <div className="flex gap-1.5 items-start">
+                        <span className="text-[#8C1D40] font-bold mt-0.5 shrink-0">·</span>
+                        <span>{children}</span>
+                      </div>
+                    ),
+                    a: ({ href, children }) => (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[#8C1D40] font-semibold underline underline-offset-2 hover:text-[#6b1530]"
+                      >
+                        {children}
+                      </a>
+                    ),
+                    code: ({ children }) => (
+                      <code className="bg-white/60 text-[#8C1D40] rounded px-1 py-0.5 text-xs font-mono">{children}</code>
+                    ),
+                  }}
+                >
+                  {msg.content}
+                </ReactMarkdown>
+              )}
             </div>
           </div>
         ))}
