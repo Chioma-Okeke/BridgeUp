@@ -1,20 +1,83 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Lazy singleton — only instantiated on the client where env vars are available
-let _supabase: ReturnType<typeof createClient> | null = null;
+// ── Minimal DB schema type so TypeScript knows our tables ──────────────────────
+export type Database = {
+  public: {
+    Tables: {
+      students: {
+        Row: {
+          id: string;
+          name: string;
+          avatar: string;
+          nervous_course: string | null;
+          goal: string | null;
+          excited: string | null;
+          comfort: number;
+          checkin_day: string;
+          room_id: string;
+          created_at: string;
+        };
+        Insert: {
+          name: string;
+          avatar: string;
+          nervous_course?: string;
+          goal?: string;
+          excited?: string;
+          comfort?: number;
+          checkin_day?: string;
+          room_id?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["students"]["Insert"]>;
+      };
+      room_events: {
+        Row: {
+          id: string;
+          room_id: string;
+          user_id: string;
+          event_type: string;
+          payload: Record<string, unknown>;
+          created_at: string;
+        };
+        Insert: {
+          room_id?: string;
+          user_id: string;
+          event_type: string;
+          payload?: Record<string, unknown>;
+        };
+        Update: never;
+      };
+      messages: {
+        Row: {
+          id: string;
+          room_id: string;
+          from_user: string;
+          text: string;
+          created_at: string;
+        };
+        Insert: {
+          room_id?: string;
+          from_user: string;
+          text: string;
+        };
+        Update: never;
+      };
+    };
+  };
+};
+
+let _supabase: ReturnType<typeof createClient<Database>> | null = null;
 
 export function getSupabase() {
   if (!_supabase) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!url || !key) throw new Error("Supabase env vars missing");
-    _supabase = createClient(url, key);
+    _supabase = createClient<Database>(url, key);
   }
   return _supabase;
 }
 
-// Keep named export for convenience — same lazy pattern
-export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+export const supabase = new Proxy({} as ReturnType<typeof createClient<Database>>, {
   get(_target, prop) {
     return (getSupabase() as unknown as Record<string, unknown>)[prop as string];
   },
@@ -22,34 +85,7 @@ export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
 
 export const ROOM_ID = "demo";
 
-export type Student = {
-  id: string;
-  name: string;
-  avatar: string;
-  nervous_course: string;
-  goal: string;
-  excited: string;
-  comfort: number;
-  checkin_day: string;
-  room_id: string;
-  created_at: string;
-};
-
-export type EventType = "struggling" | "checkin" | "booking";
-
-export type RoomEvent = {
-  id: string;
-  room_id: string;
-  user_id: string;
-  event_type: EventType;
-  payload: Record<string, unknown>;
-  created_at: string;
-};
-
-export type ChatMessage = {
-  id: string;
-  room_id: string;
-  from_user: string;
-  text: string;
-  created_at: string;
-};
+export type Student    = Database["public"]["Tables"]["students"]["Row"];
+export type RoomEvent  = Database["public"]["Tables"]["room_events"]["Row"];
+export type ChatMessage = Database["public"]["Tables"]["messages"]["Row"];
+export type EventType  = "struggling" | "checkin" | "booking";
