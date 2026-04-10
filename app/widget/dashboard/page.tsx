@@ -366,11 +366,20 @@ function ChatTab({ myId, partner }: { myId: string; partner: Student }) {
 // ── Tab 3: AI Help ────────────────────────────────────────────────────────────
 type AIMessage = { role: "user" | "assistant"; content: string };
 
-const SUGGESTIONS = [
+const RESOURCE_SUGGESTIONS = [
   "Where can I get math tutoring?",
   "I'm struggling with writing an essay",
   "I feel overwhelmed and stressed",
   "I'm not sure I picked the right major",
+];
+
+const NAVIGATION_SUGGESTIONS = [
+  "What is a DARS audit and why does it matter?",
+  "What's the difference between a major map and DARS?",
+  "What is a credit hour?",
+  "What does 'off-track' mean on eAdvisor?",
+  "How do I know if I'm on track to graduate?",
+  "What's an academic advisor and when should I see one?",
 ];
 
 function AIHelpTab() {
@@ -407,19 +416,34 @@ function AIHelpTab() {
         <div className="w-9 h-9 rounded-full bg-[#FFC627] flex items-center justify-center text-xl">✨</div>
         <div>
           <p className="font-bold text-zinc-800 text-sm">BridgeUp AI</p>
-          <p className="text-zinc-400 text-xs">Finds the right ASU resource for you</p>
+          <p className="text-zinc-400 text-xs">No question is too basic — ask anything</p>
         </div>
       </div>
 
       {messages.length === 0 && (
-        <div className="flex flex-col gap-2 mb-3">
-          <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wide px-1">Try asking...</p>
-          {SUGGESTIONS.map((s) => (
-            <button key={s} type="button" onClick={() => handleSend(s)}
-              className="text-left bg-white border border-zinc-200 hover:border-[#8C1D40]/30 rounded-xl px-3 py-2.5 text-sm text-zinc-600 hover:bg-[#8C1D40]/5 transition-all">
-              {s}
-            </button>
-          ))}
+        <div className="flex flex-col gap-3 mb-3">
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest px-1">Find support</p>
+            {RESOURCE_SUGGESTIONS.map((s) => (
+              <button key={s} type="button" onClick={() => handleSend(s)}
+                className="text-left bg-white border border-zinc-200 hover:border-[#8C1D40]/30 rounded-xl px-3 py-2.5 text-sm text-zinc-600 hover:bg-[#8C1D40]/5 transition-all">
+                {s}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2 px-1">
+              <p className="text-[10px] text-[#8C1D40] font-bold uppercase tracking-widest">How college works</p>
+              <span className="bg-[#8C1D40] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">First-gen</span>
+            </div>
+            <p className="text-[10px] text-zinc-400 px-1 -mt-0.5">Questions you never got to ask — this is the safe place.</p>
+            {NAVIGATION_SUGGESTIONS.map((s) => (
+              <button key={s} type="button" onClick={() => handleSend(s)}
+                className="text-left bg-[#8C1D40]/5 border border-[#8C1D40]/15 hover:border-[#8C1D40]/40 rounded-xl px-3 py-2.5 text-sm text-zinc-700 hover:bg-[#8C1D40]/10 transition-all">
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -474,7 +498,7 @@ function AIHelpTab() {
       <div className="flex gap-2 mt-3">
         <input type="text" value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Ask about ASU resources..." title="Ask AI for help"
+          placeholder="Ask anything — resources, credits, DARS..." title="Ask AI for help"
           className="flex-1 bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-sm text-zinc-700 placeholder-zinc-400 focus:outline-none focus:border-[#8C1D40]/40 transition-colors"
         />
         <button type="button" onClick={() => handleSend()} disabled={!input.trim() || loading}
