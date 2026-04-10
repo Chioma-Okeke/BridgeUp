@@ -523,7 +523,7 @@ export default function DashboardWidget() {
 
       {/* Tab content */}
       <div className="flex-1 bg-zinc-50 rounded-t-3xl overflow-y-auto">
-        <div className="p-4">
+        <div className="p-4 h-full">
           {activeTab === "checkin" && <CheckInTab />}
           {activeTab === "chat"    && <ChatTab />}
           {activeTab === "ai"      && <AIHelpTab />}
