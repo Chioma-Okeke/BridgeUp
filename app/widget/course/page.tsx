@@ -4,48 +4,61 @@ import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 
 // ── Mock course data ──────────────────────────────────────────────────────────
-const COURSES: Record<
-  string,
-  {
-    name: string;
-    code: string;
-    streakDrop: boolean;
-    nudge: {
-      signal: string;
-      resource: string;
-      description: string;
-      cta: string;
-      service: string;
-      milestone: { emoji: string; label: string };
-    };
-  }
-> = {
-  default: {
+type CourseData = {
+  name: string;
+  code: string;
+  streakDrop: boolean;
+  nudge: {
+    signal: string;
+    resource: string;
+    description: string;
+    cta: string;
+    service: string;
+    milestone: { emoji: string; label: string };
+  };
+};
+
+// ── Add your real Canvas course IDs as keys below ────────────────────────────
+// Find them in the URL: canvas.asu.edu/courses/XXXXXXXX
+const COURSES: Record<string, CourseData> = {
+  // REPLACE these keys with your real Canvas course IDs
+  "COURSE_ID_1": {
     name: "Calculus for Engineers",
     code: "MAT 265",
     streakDrop: true,
     nudge: {
       signal: "Your assignment streak dropped this week",
       resource: "ASN Subject Tutoring",
-      description:
-        "Free drop-in tutoring for MAT 265. Your partner Jordan can join you — walk in together.",
+      description: "Free drop-in tutoring for MAT 265. Your partner Jordan can join you — walk in together.",
       cta: "Book MAT 265 Tutor →",
       service: "Academic Support Network",
       milestone: { emoji: "🎯", label: "First Step Taken!" },
     },
   },
-  writing: {
+  "COURSE_ID_2": {
     name: "English Composition",
     code: "ENG 101",
     streakDrop: false,
     nudge: {
       signal: "Jordan mentioned an upcoming essay in their check-in",
       resource: "ASU Writing Center",
-      description:
-        "Get help at any stage — brainstorming to final draft. Co-book a session with Jordan.",
+      description: "Get help at any stage — brainstorming to final draft. Co-book a session with Jordan.",
       cta: "Book Writing Center →",
       service: "ASU Writing Centers",
       milestone: { emoji: "✍️", label: "Writer's Block Broken!" },
+    },
+  },
+  "COURSE_ID_3": {
+    name: "Software Security",
+    code: "CSE 545",
+    streakDrop: true,
+    nudge: {
+      signal: "You missed 2 assignments this week",
+      resource: "Student Success Center",
+      description: "Peer success coaching for class struggles. Your partner can join your first session.",
+      cta: "Book Success Coach →",
+      service: "Student Success Center",
+      milestone: { emoji: "💪", label: "Support Unlocked!" },
     },
   },
 };
@@ -89,10 +102,15 @@ function CourseWidgetInner() {
 
   const [activated, setActivated] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
+  const [struggling, setStruggling] = useState(false);
 
   function handleCTA() {
     setActivated(true);
     setShowMilestone(true);
+  }
+
+  function handleStruggling() {
+    setStruggling(true);
   }
 
   return (
@@ -127,7 +145,17 @@ function CourseWidgetInner() {
         )}
 
         {/* Resource nudge card */}
-        {!activated ? (
+        {struggling && !activated && (
+          <div className="bg-[#8C1D40]/8 border border-[#8C1D40]/20 rounded-2xl p-4 flex gap-3">
+            <span className="text-xl">😮‍💨</span>
+            <div>
+              <p className="text-[#8C1D40] font-semibold text-sm">Signal sent to Jordan</p>
+              <p className="text-zinc-500 text-xs mt-0.5">A resource card has been surfaced for both of you.</p>
+            </div>
+          </div>
+        )}
+
+        {(!activated && (course.streakDrop || struggling)) ? (
           <div className="bg-[#FFC627] rounded-2xl p-4 shadow-sm">
             <p className="text-[10px] font-semibold text-[#8C1D40] uppercase tracking-widest mb-1">
               Suggested Resource
@@ -146,7 +174,7 @@ function CourseWidgetInner() {
               {course.nudge.cta}
             </button>
           </div>
-        ) : (
+        ) : !activated ? null : (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex gap-3">
             <span className="text-xl">✅</span>
             <div>
@@ -169,15 +197,21 @@ function CourseWidgetInner() {
             </div>
             <div className="flex-1">
               <p className="font-bold text-zinc-800 text-sm">Jordan</p>
-              <p className="text-zinc-500 text-xs">Checked in · Feeling `&quot;`tough`&quot;` this week</p>
+              <p className="text-zinc-500 text-xs">Checked in · Feeling &quot;tough&quot; this week</p>
             </div>
           </div>
 
           {/* I'm struggling too */}
-          <button className="mt-3 w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#8C1D40]/30 hover:border-[#8C1D40] rounded-xl py-2.5 text-[#8C1D40] font-semibold text-sm transition-all hover:bg-[#8C1D40]/5">
-            <span>😮‍💨</span>
-            I&apos;m struggling too
-          </button>
+          {!struggling && (
+            <button
+              type="button"
+              onClick={handleStruggling}
+              className="mt-3 w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#8C1D40]/30 hover:border-[#8C1D40] rounded-xl py-2.5 text-[#8C1D40] font-semibold text-sm transition-all hover:bg-[#8C1D40]/5"
+            >
+              <span>😮‍💨</span>
+              I&apos;m struggling too
+            </button>
+          )}
         </div>
 
         {/* Week context */}
