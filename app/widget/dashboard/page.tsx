@@ -354,7 +354,7 @@ function AIHelpTab() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full pr-1">
       {/* Header */}
       <div className="flex items-center gap-3 bg-white rounded-2xl border border-zinc-100 p-3 mb-3">
         <div className="w-9 h-9 rounded-full bg-[#FFC627] flex items-center justify-center text-xl">✨</div>
