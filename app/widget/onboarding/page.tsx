@@ -2,35 +2,63 @@
 
 import { useState, useEffect } from "react";
 
-const AVATARS = ["🌵", "🦋", "🌟", "🔥", "🌊", "🦅", "🌸", "⚡", "🎯", "🌙"];
+// In production, pulled from MyASU. Hardcoded for demo.
+const DEMO_NAME = "Maria";
 
-const COMFORT_LABELS: Record<number, { label: string; desc: string; color: string }> = {
-  1: { label: "Very uncomfortable", desc: "Asking for help feels really hard right now", color: "#ef4444" },
-  2: { label: "Uncomfortable",      desc: "I usually try to figure things out alone",    color: "#f97316" },
-  3: { label: "Neutral",            desc: "Sometimes I ask, sometimes I don't",          color: "#eab308" },
-  4: { label: "Comfortable",        desc: "I'm okay reaching out when I need to",        color: "#22c55e" },
-  5: { label: "Very comfortable",   desc: "I have no problem asking for help",           color: "#16a34a" },
-};
+const AVATARS = ["🦊", "🌵", "⚡", "🌊", "🏔️", "🍌", "🦋", "🌸", "🌙", "🎯"];
 
-// ── Step indicators ─────────────────────────────────────────────────────────
-function StepIndicators({ step }: { step: number }) {
+const COURSES = [
+  "MAT 265 — Calculus for Engineers",
+  "ENG 101 — English Composition",
+  "CSE 110 — Principles of Programming",
+  "BIO 181 — General Biology",
+  "CHM 113 — General Chemistry",
+  "ECN 211 — Macroeconomic Principles",
+  "Not sure yet",
+];
+
+const GOALS = [
+  "Keeping up with coursework",
+  "Understanding the material",
+  "Managing stress",
+  "Knowing where to go for help",
+  "Staying motivated",
+  "Something else",
+];
+
+const COMFORT_SCALE = [
+  { emoji: "😟", label: "Not at all",      value: 1 },
+  { emoji: "😕", label: "A little hard",   value: 2 },
+  { emoji: "😐", label: "Sometimes okay",  value: 3 },
+  { emoji: "🙂", label: "Usually fine",    value: 4 },
+  { emoji: "😊", label: "Very comfortable", value: 5 },
+];
+
+const CHECKIN_DAYS = [
+  { id: "monday",    label: "Monday morning" },
+  { id: "wednesday", label: "Wednesday evening" },
+  { id: "friday",    label: "Friday afternoon" },
+];
+
+// ── Step indicators ────────────────────────────────────────────────────────────
+function StepIndicators({ step, total }: { step: number; total: number }) {
   return (
-    <div className="flex items-center gap-2 justify-center mb-6">
-      {[1, 2, 3].map((s) => (
-        <div key={s} className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5 justify-center mb-6">
+      {Array.from({ length: total }, (_, i) => i + 1).map((s) => (
+        <div key={s} className="flex items-center gap-1.5">
           <div
-            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+            className={`rounded-full transition-all ${
               s < step
-                ? "bg-[#FFC627] text-[#8C1D40]"
+                ? "w-5 h-5 bg-[#FFC627] flex items-center justify-center text-[9px] font-bold text-[#8C1D40]"
                 : s === step
-                ? "bg-white text-[#8C1D40]"
-                : "bg-white/20 text-white/40"
+                ? "w-5 h-5 bg-white flex items-center justify-center text-[9px] font-bold text-[#8C1D40]"
+                : "w-2 h-2 bg-white/20"
             }`}
           >
-            {s < step ? "✓" : s}
+            {s <= step && (s < step ? "✓" : s)}
           </div>
-          {s < 3 && (
-            <div className={`w-8 h-0.5 ${s < step ? "bg-[#FFC627]" : "bg-white/20"}`} />
+          {s < total && (
+            <div className={`h-0.5 w-4 ${s < step ? "bg-[#FFC627]" : "bg-white/20"}`} />
           )}
         </div>
       ))}
@@ -38,30 +66,70 @@ function StepIndicators({ step }: { step: number }) {
   );
 }
 
-// ── Step 1: Avatar + Name ────────────────────────────────────────────────────
-function Step1({
-  selectedAvatar, setSelectedAvatar, name, setName, onNext,
+// ── Screen 1: Welcome ──────────────────────────────────────────────────────────
+function Screen1({ onNext }: { onNext: () => void }) {
+  return (
+    <div className="flex flex-col flex-1 gap-5">
+      <div className="flex-1 flex flex-col justify-center gap-5">
+        <div className="flex flex-col gap-3">
+          <h2 className="text-white font-bold text-2xl leading-snug">
+            Welcome to BridgeUp,<br />{DEMO_NAME}.
+          </h2>
+          <p className="text-white/70 text-sm leading-relaxed">
+            College is hard — for everyone. BridgeUp pairs you with a fellow
+            student in one of your classes so you don&apos;t have to figure it out alone.
+          </p>
+          <p className="text-white/70 text-sm leading-relaxed">
+            Takes 3 minutes to set up. You can opt out any time.
+          </p>
+        </div>
+
+        <div className="bg-white/10 rounded-2xl p-4 flex flex-col gap-2.5">
+          {[
+            { icon: "🎓", text: "Matched with a peer in your class" },
+            { icon: "📍", text: "Nudged when you might need support" },
+            { icon: "🔒", text: "Your private answers stay private — always" },
+          ].map(({ icon, text }) => (
+            <div key={text} className="flex items-center gap-3">
+              <span className="text-lg">{icon}</span>
+              <p className="text-white/80 text-xs">{text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={onNext}
+        className="w-full bg-[#FFC627] text-[#8C1D40] font-bold rounded-xl py-3 text-sm hover:bg-yellow-300 transition-colors"
+      >
+        Let&apos;s go →
+      </button>
+    </div>
+  );
+}
+
+// ── Screen 2: Avatar ───────────────────────────────────────────────────────────
+function Screen2({
+  selectedAvatar, setSelectedAvatar, onBack, onNext,
 }: {
   selectedAvatar: string;
   setSelectedAvatar: (v: string) => void;
-  name: string;
-  setName: (v: string) => void;
+  onBack: () => void;
   onNext: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-5 flex-1">
+    <div className="flex flex-col flex-1 gap-5">
       <div>
-        <h2 className="text-white font-bold text-lg leading-tight">Create your identity</h2>
-        <p className="text-white/60 text-xs mt-1">
-          This is how your accountability partner will see you.
-        </p>
+        <h2 className="text-white font-bold text-lg leading-tight">Build your identity</h2>
+        <p className="text-white/60 text-xs mt-1">This is how your accountability partner sees you.</p>
       </div>
 
       <div className="flex flex-col items-center gap-2">
-        <div className="w-20 h-20 rounded-full bg-[#FFC627] flex items-center justify-center text-4xl shadow-lg">
+        <div className="w-20 h-20 rounded-full bg-[#FFC627] flex items-center justify-center text-4xl shadow-lg transition-all">
           {selectedAvatar}
         </div>
-        <p className="text-white/50 text-xs">Choose your avatar</p>
+        <p className="text-white/50 text-xs">Pick your avatar — Q1 of 5</p>
       </div>
 
       <div className="grid grid-cols-5 gap-2">
@@ -81,86 +149,9 @@ function Step1({
         ))}
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-white/70 text-xs font-semibold uppercase tracking-wide">
-          First name
-        </label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Maria"
-          title="Your first name"
-          className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#FFC627] transition-colors"
-        />
-      </div>
-
-      <button
-        type="button"
-        onClick={onNext}
-        disabled={!name.trim()}
-        className="mt-auto w-full bg-[#FFC627] text-[#8C1D40] font-bold rounded-xl py-3 text-sm transition-all disabled:opacity-40 hover:bg-yellow-300"
-      >
-        Next →
-      </button>
-    </div>
-  );
-}
-
-// ── Step 2: Comfort scale ────────────────────────────────────────────────────
-function Step2({
-  comfort, setComfort, onBack, onNext,
-}: {
-  comfort: number;
-  setComfort: (v: number) => void;
-  onBack: () => void;
-  onNext: () => void;
-}) {
-  const info = COMFORT_LABELS[comfort];
-  return (
-    <div className="flex flex-col gap-5 flex-1">
-      <div>
-        <h2 className="text-white font-bold text-lg leading-tight">
-          How comfortable are you asking for help?
-        </h2>
-        <p className="text-white/60 text-xs mt-1">
-          This is private — only BridgeUp uses it to nudge you at the right time.
-        </p>
-      </div>
-
-      <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2.5">
-        <span className="text-lg">🔒</span>
-        <p className="text-white/70 text-xs">
-          Your comfort level is never visible to your partner or advisors.
-        </p>
-      </div>
-
-      <div className="flex flex-col items-center gap-3 py-4">
-        <div
-          className="w-20 h-20 rounded-full flex items-center justify-center text-4xl font-black shadow-lg transition-all"
-          style={{ background: info.color }}
-        >
-          {comfort}
-        </div>
-        <p className="text-white font-bold text-base">{info.label}</p>
-        <p className="text-white/60 text-xs text-center px-4">{info.desc}</p>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <input
-          type="range"
-          min={1}
-          max={5}
-          value={comfort}
-          title="Comfort level"
-          onChange={(e) => setComfort(Number(e.target.value))}
-          className="w-full accent-[#FFC627] cursor-pointer"
-        />
-        <div className="flex justify-between text-white/40 text-[10px]">
-          <span>Very uncomfortable</span>
-          <span>Very comfortable</span>
-        </div>
-      </div>
+      <p className="text-white/30 text-[10px] text-center -mt-2">
+        More styles unlocked as you earn milestones
+      </p>
 
       <div className="flex gap-3 mt-auto">
         <button
@@ -182,148 +173,344 @@ function Step2({
   );
 }
 
-// ── Step 3: Partner match reveal ─────────────────────────────────────────────
-function Step3({
-  selectedAvatar, name,
+// ── Screen 3: Your situation ───────────────────────────────────────────────────
+function Screen3({
+  nervousCourse, setNervousCourse,
+  goal, setGoal,
+  excited, setExcited,
+  onBack, onNext,
 }: {
-  selectedAvatar: string;
-  name: string;
+  nervousCourse: string; setNervousCourse: (v: string) => void;
+  goal: string;          setGoal: (v: string) => void;
+  excited: string;       setExcited: (v: string) => void;
+  onBack: () => void;    onNext: () => void;
 }) {
-  const [done, setDone] = useState(false);
+  const canProceed = !!nervousCourse && !!goal;
 
   return (
-    <div className="flex flex-col gap-5 flex-1">
+    <div className="flex flex-col flex-1 gap-5 overflow-y-auto">
       <div>
-        <h2 className="text-white font-bold text-lg leading-tight">
-          {!done ? "Finding your partner..." : "You're matched! 🎉"}
-        </h2>
-        <p className="text-white/60 text-xs mt-1">
-          {!done
-            ? "Matching you with a peer in your shared course."
-            : "You and Jordan are both in MAT 265."}
-        </p>
+        <h2 className="text-white font-bold text-lg leading-tight">Help us match you well</h2>
+        <p className="text-white/60 text-xs mt-1">3 questions — all low-stakes, no wrong answers.</p>
       </div>
 
-      {!done ? (
-        <div className="flex flex-col items-center gap-6 py-8">
-          <div className="flex items-center gap-4">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-16 h-16 rounded-full bg-[#FFC627] flex items-center justify-center text-3xl">
-                {selectedAvatar}
-              </div>
-              <p className="text-white text-xs font-semibold">{name}</p>
-            </div>
-
-            <div className="flex gap-1">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="w-2 h-2 rounded-full bg-white/40 animate-bounce"
-                  style={{ animationDelay: `${i * 0.15}s` }}
-                />
-              ))}
-            </div>
-
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-3xl blur-sm">
-                🌟
-              </div>
-              <p className="text-white/30 text-xs font-semibold">???</p>
-            </div>
-          </div>
-
-          <p className="text-white/50 text-xs text-center">
-            Scanning shared courses · MAT 265, CSE 110...
-          </p>
-
-          <button
-            type="button"
-            onClick={() => setDone(true)}
-            className="bg-white/10 hover:bg-white/20 text-white text-xs px-6 py-2 rounded-full transition-colors"
+      {/* Q2 */}
+      <div className="flex flex-col gap-2">
+        <label className="text-white/80 text-xs font-semibold">
+          Which course are you most nervous about this semester?
+        </label>
+        <div className="relative">
+          <select
+            value={nervousCourse}
+            onChange={(e) => setNervousCourse(e.target.value)}
+            title="Nervous course"
+            className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#FFC627] transition-colors appearance-none cursor-pointer"
           >
-            Reveal match →
-          </button>
+            <option value="" disabled className="text-zinc-800">Select a course…</option>
+            {COURSES.map((c) => (
+              <option key={c} value={c} className="text-zinc-800">{c}</option>
+            ))}
+          </select>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none">▾</span>
         </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <div className="bg-white rounded-2xl p-5 flex flex-col items-center gap-3 shadow-lg">
-            <div className="flex items-center gap-6">
-              <div className="flex flex-col items-center gap-1">
-                <div className="w-14 h-14 rounded-full bg-[#FFC627] flex items-center justify-center text-2xl">
-                  {selectedAvatar}
-                </div>
-                <p className="text-xs font-bold text-zinc-700">{name}</p>
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-2xl">🤝</span>
-                <span className="text-[10px] text-zinc-400">matched</span>
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <div className="w-14 h-14 rounded-full bg-[#8C1D40]/10 flex items-center justify-center text-2xl">
-                  🌟
-                </div>
-                <p className="text-xs font-bold text-zinc-700">Jordan</p>
-              </div>
-            </div>
+      </div>
 
-            <div className="bg-zinc-50 rounded-xl px-4 py-2.5 w-full text-center">
-              <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wide mb-0.5">
-                Shared course
-              </p>
-              <p className="text-sm font-bold text-zinc-700">MAT 265 — Calculus for Engineers</p>
-            </div>
-          </div>
-
-          <div className="bg-white/10 rounded-2xl p-4 flex flex-col gap-3">
-            <p className="text-white/70 text-xs font-semibold uppercase tracking-wide">
-              Jordan shared...
-            </p>
-            <div className="flex gap-2 items-start">
-              <span>🎉</span>
-              <p className="text-white text-xs">
-                <strong>Excited about:</strong> Finally understanding integrals
-              </p>
-            </div>
-            <div className="flex gap-2 items-start">
-              <span>😬</span>
-              <p className="text-white text-xs">
-                <strong>Nervous about:</strong> The midterm in Week 8
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-[#FFC627] rounded-2xl p-4 flex gap-3 items-center">
-            <span className="text-2xl">🗺️</span>
-            <div>
-              <p className="text-[#8C1D40] font-bold text-sm">First milestone unlocked!</p>
-              <p className="text-[#8C1D40]/70 text-xs">Run your DARS audit to set up your roadmap.</p>
-            </div>
-          </div>
+      {/* Q3 */}
+      <div className="flex flex-col gap-2">
+        <label className="text-white/80 text-xs font-semibold">
+          What&apos;s one thing you&apos;re hoping to get better at this semester?
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {GOALS.map((g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => setGoal(g)}
+              className={`text-left text-xs px-3 py-2.5 rounded-xl border transition-all ${
+                goal === g
+                  ? "bg-[#FFC627] border-[#FFC627] text-[#8C1D40] font-bold"
+                  : "bg-white/10 border-white/20 text-white/80 hover:bg-white/20"
+              }`}
+            >
+              {g}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
-      {done && (
-        <button
-          type="button"
-          onClick={() => {
-            localStorage.setItem("bridgeup_onboarded", "true");
-            window.location.href = "/widget/dashboard";
-          }}
-          className="mt-auto w-full bg-[#FFC627] text-[#8C1D40] font-bold rounded-xl py-3 text-sm hover:bg-yellow-300 transition-colors"
-        >
-          Go to my dashboard →
+      {/* Q4 */}
+      <div className="flex flex-col gap-2">
+        <label className="text-white/80 text-xs font-semibold">
+          One thing you&apos;re excited about this semester — just one.
+          <span className="text-white/40 font-normal ml-1">(optional)</span>
+        </label>
+        <textarea
+          value={excited}
+          onChange={(e) => setExcited(e.target.value)}
+          placeholder="e.g. finally taking a class I actually chose…"
+          title="Excited about"
+          rows={2}
+          className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm resize-none focus:outline-none focus:border-[#FFC627] transition-colors"
+        />
+        <p className="text-white/30 text-[10px]">Shared with your partner as your opening message.</p>
+      </div>
+
+      <div className="flex gap-3 mt-auto">
+        <button type="button" onClick={onBack}
+          className="flex-1 bg-white/10 text-white font-semibold rounded-xl py-3 text-sm hover:bg-white/20 transition-colors">
+          ← Back
         </button>
-      )}
+        <button type="button" onClick={onNext} disabled={!canProceed}
+          className="flex-[2] bg-[#FFC627] text-[#8C1D40] font-bold rounded-xl py-3 text-sm hover:bg-yellow-300 transition-colors disabled:opacity-40">
+          Next →
+        </button>
+      </div>
     </div>
   );
 }
 
-// ── Main page ────────────────────────────────────────────────────────────────
+// ── Screen 4: Comfort scale ────────────────────────────────────────────────────
+function Screen4({
+  comfort, setComfort, onBack, onNext,
+}: {
+  comfort: number; setComfort: (v: number) => void;
+  onBack: () => void; onNext: () => void;
+}) {
+  const selected = COMFORT_SCALE.find((c) => c.value === comfort);
+
+  return (
+    <div className="flex flex-col flex-1 gap-5">
+      <div>
+        <h2 className="text-white font-bold text-lg leading-tight">
+          This is just for you —<br />your partner never sees this
+        </h2>
+        <p className="text-white/60 text-xs mt-1">1 question — the most important private input.</p>
+      </div>
+
+      <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2.5">
+        <span className="text-lg">🔒</span>
+        <p className="text-white/70 text-xs">
+          Only you see this. Never shown to your partner, advisors, or faculty.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <p className="text-white font-semibold text-sm text-center">
+          How comfortable are you asking for help when you&apos;re struggling?
+        </p>
+
+        {/* Emoji row */}
+        <div className="flex justify-between gap-1">
+          {COMFORT_SCALE.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              onClick={() => setComfort(c.value)}
+              className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 transition-all ${
+                comfort === c.value
+                  ? "bg-white/20 border-[#FFC627] scale-105"
+                  : "bg-white/5 border-transparent hover:bg-white/10"
+              }`}
+            >
+              <span className="text-2xl">{c.emoji}</span>
+              <span className={`text-[9px] text-center leading-tight font-medium ${
+                comfort === c.value ? "text-[#FFC627]" : "text-white/50"
+              }`}>
+                {c.label}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {selected && (
+          <p className="text-white/60 text-xs text-center px-4">
+            {comfort === 1 && "BridgeUp will check in gently — no pressure, ever."}
+            {comfort === 2 && "That's okay. BridgeUp will ease you in with low-stakes steps."}
+            {comfort === 3 && "Good to know. We'll nudge you at the right moments."}
+            {comfort === 4 && "Great. We'll connect you with resources when they're relevant."}
+            {comfort === 5 && "Awesome. We'll surface resources and support proactively."}
+          </p>
+        )}
+      </div>
+
+      <div className="flex gap-3 mt-auto">
+        <button type="button" onClick={onBack}
+          className="flex-1 bg-white/10 text-white font-semibold rounded-xl py-3 text-sm hover:bg-white/20 transition-colors">
+          ← Back
+        </button>
+        <button type="button" onClick={onNext}
+          className="flex-[2] bg-[#FFC627] text-[#8C1D40] font-bold rounded-xl py-3 text-sm hover:bg-yellow-300 transition-colors">
+          Next →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Screen 5: Confirm & go ─────────────────────────────────────────────────────
+function Screen5({
+  selectedAvatar, nervousCourse, goal, checkinDay, setCheckinDay, onBack,
+}: {
+  selectedAvatar: string;
+  nervousCourse: string;
+  goal: string;
+  checkinDay: string;
+  setCheckinDay: (v: string) => void;
+  onBack: () => void;
+}) {
+  const [partnerRevealed, setPartnerRevealed] = useState(false);
+
+  function handleLaunch() {
+    setPartnerRevealed(true);
+  }
+
+  function handleGoToDashboard() {
+    localStorage.setItem("bridgeup_onboarded", "true");
+    window.location.href = "/widget/dashboard";
+  }
+
+  if (partnerRevealed) {
+    return (
+      <div className="flex flex-col flex-1 gap-4">
+        <div>
+          <h2 className="text-white font-bold text-lg leading-tight">You&apos;re matched! 🎉</h2>
+          <p className="text-white/60 text-xs mt-1">You and Jordan are both in {nervousCourse.split("—")[0].trim()}.</p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 flex flex-col items-center gap-3 shadow-lg">
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-14 h-14 rounded-full bg-[#FFC627] flex items-center justify-center text-2xl">
+                {selectedAvatar}
+              </div>
+              <p className="text-xs font-bold text-zinc-700">{DEMO_NAME}</p>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-2xl">🤝</span>
+              <span className="text-[10px] text-zinc-400">matched</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-14 h-14 rounded-full bg-[#8C1D40]/10 flex items-center justify-center text-2xl">
+                🌟
+              </div>
+              <p className="text-xs font-bold text-zinc-700">Jordan</p>
+            </div>
+          </div>
+          <div className="bg-zinc-50 rounded-xl px-4 py-2.5 w-full text-center">
+            <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wide mb-0.5">Shared course</p>
+            <p className="text-sm font-bold text-zinc-700">{nervousCourse}</p>
+          </div>
+        </div>
+
+        <div className="bg-white/10 rounded-2xl p-4 flex flex-col gap-3">
+          <p className="text-white/70 text-xs font-semibold uppercase tracking-wide">Jordan shared...</p>
+          <div className="flex gap-2 items-start">
+            <span>🎉</span>
+            <p className="text-white text-xs"><strong>Excited about:</strong> Finally understanding integrals</p>
+          </div>
+          <div className="flex gap-2 items-start">
+            <span>😬</span>
+            <p className="text-white text-xs"><strong>Nervous about:</strong> The midterm in Week 8</p>
+          </div>
+        </div>
+
+        <div className="bg-[#FFC627] rounded-2xl p-4 flex gap-3 items-center">
+          <span className="text-2xl">🗺️</span>
+          <div>
+            <p className="text-[#8C1D40] font-bold text-sm">First milestone unlocked!</p>
+            <p className="text-[#8C1D40]/70 text-xs">Run your DARS audit to set up your roadmap.</p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoToDashboard}
+          className="mt-auto w-full bg-[#FFC627] text-[#8C1D40] font-bold rounded-xl py-3 text-sm hover:bg-yellow-300 transition-colors"
+        >
+          Go to my dashboard →
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col flex-1 gap-4">
+      <div>
+        <h2 className="text-white font-bold text-lg leading-tight">Your setup, confirmed</h2>
+        <p className="text-white/60 text-xs mt-1">Here&apos;s what we know about you.</p>
+      </div>
+
+      {/* Summary card */}
+      <div className="bg-white rounded-2xl p-4 flex flex-col gap-3 shadow-sm">
+        {[
+          { icon: selectedAvatar, label: "Avatar", value: selectedAvatar },
+          { icon: "📚", label: "Nervous about", value: nervousCourse },
+          { icon: "🎯", label: "Goal", value: goal },
+        ].map(({ icon, label, value }) => (
+          <div key={label} className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-[#8C1D40]/10 flex items-center justify-center text-base shrink-0">
+              {icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wide">{label}</p>
+              <p className="text-zinc-700 text-xs font-medium truncate">{value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Q6 — check-in day */}
+      <div className="flex flex-col gap-2">
+        <p className="text-white/80 text-xs font-semibold">
+          When should we send your weekly check-in reminder?
+          <span className="text-white/40 font-normal ml-1">(optional)</span>
+        </p>
+        <div className="flex flex-col gap-2">
+          {CHECKIN_DAYS.map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => setCheckinDay(d.id)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                checkinDay === d.id
+                  ? "bg-[#FFC627]/20 border-[#FFC627] text-white"
+                  : "bg-white/5 border-white/20 text-white/60 hover:bg-white/10"
+              }`}
+            >
+              <span className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 ${
+                checkinDay === d.id ? "bg-[#FFC627] border-[#FFC627]" : "border-white/30"
+              }`} />
+              {d.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-3 mt-auto">
+        <button type="button" onClick={onBack}
+          className="flex-1 bg-white/10 text-white font-semibold rounded-xl py-3 text-sm hover:bg-white/20 transition-colors">
+          ← Back
+        </button>
+        <button type="button" onClick={handleLaunch}
+          className="flex-[2] bg-[#FFC627] text-[#8C1D40] font-bold rounded-xl py-3 text-sm hover:bg-yellow-300 transition-colors">
+          Find my partner →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ──────────────────────────────────────────────────────────────────
 export default function Onboarding() {
   const [step, setStep] = useState(1);
+
+  // Collected data
   const [selectedAvatar, setSelectedAvatar] = useState("🌵");
-  const [name, setName] = useState("");
-  const [comfort, setComfort] = useState(3);
+  const [nervousCourse, setNervousCourse]   = useState("");
+  const [goal, setGoal]                     = useState("");
+  const [excited, setExcited]               = useState("");
+  const [comfort, setComfort]               = useState(3);
+  const [checkinDay, setCheckinDay]         = useState("monday");
 
   useEffect(() => {
     if (localStorage.getItem("bridgeup_onboarded") === "true") {
@@ -331,40 +518,55 @@ export default function Onboarding() {
     }
   }, []);
 
+  const TOTAL_STEPS = 5;
+
   return (
     <div className="h-screen w-full bg-[#8C1D40] flex flex-col p-5 overflow-hidden font-sans">
-      <div className="flex-shrink-0 mb-4">
+      <div className="shrink-0 mb-3">
         <span className="bg-[#FFC627] text-[#8C1D40] text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide">
           BridgeUp
         </span>
-        <p className="text-white font-bold text-base mt-2">Welcome to BridgeUp</p>
-        <p className="text-white/50 text-xs">Let&apos;s set you up in 3 minutes.</p>
       </div>
 
-      <StepIndicators step={step} />
+      <StepIndicators step={step} total={TOTAL_STEPS} />
 
       <div className="flex-1 overflow-y-auto flex flex-col">
         {step === 1 && (
-          <Step1
-            selectedAvatar={selectedAvatar}
-            setSelectedAvatar={setSelectedAvatar}
-            name={name}
-            setName={setName}
-            onNext={() => setStep(2)}
-          />
+          <Screen1 onNext={() => setStep(2)} />
         )}
         {step === 2 && (
-          <Step2
-            comfort={comfort}
-            setComfort={setComfort}
+          <Screen2
+            selectedAvatar={selectedAvatar}
+            setSelectedAvatar={setSelectedAvatar}
             onBack={() => setStep(1)}
             onNext={() => setStep(3)}
           />
         )}
         {step === 3 && (
-          <Step3
+          <Screen3
+            nervousCourse={nervousCourse} setNervousCourse={setNervousCourse}
+            goal={goal}                   setGoal={setGoal}
+            excited={excited}             setExcited={setExcited}
+            onBack={() => setStep(2)}
+            onNext={() => setStep(4)}
+          />
+        )}
+        {step === 4 && (
+          <Screen4
+            comfort={comfort}
+            setComfort={setComfort}
+            onBack={() => setStep(3)}
+            onNext={() => setStep(5)}
+          />
+        )}
+        {step === 5 && (
+          <Screen5
             selectedAvatar={selectedAvatar}
-            name={name}
+            nervousCourse={nervousCourse}
+            goal={goal}
+            checkinDay={checkinDay}
+            setCheckinDay={setCheckinDay}
+            onBack={() => setStep(4)}
           />
         )}
       </div>
