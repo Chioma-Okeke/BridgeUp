@@ -256,7 +256,7 @@ function ChatTab() {
   }
 
   return (
-    <div className="flex flex-col h-full pr-1">
+    <div className="flex flex-col h-full">
       {/* Partner header */}
       <div className="flex items-center gap-3 bg-white rounded-2xl border border-zinc-100 p-3 mb-3">
         <div className="w-9 h-9 rounded-full bg-[#8C1D40]/10 flex items-center justify-center text-xl">🌟</div>
@@ -354,7 +354,7 @@ function AIHelpTab() {
   }
 
   return (
-    <div className="flex flex-col h-full pr-1">
+    <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-3 bg-white rounded-2xl border border-zinc-100 p-3 mb-3">
         <div className="w-9 h-9 rounded-full bg-[#FFC627] flex items-center justify-center text-xl">✨</div>
@@ -522,7 +522,7 @@ export default function DashboardWidget() {
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 bg-zinc-50 rounded-t-3xl overflow-y-auto">
+      <div className="flex-1 bg-zinc-50 rounded-t-3xl pr-2 overflow-y-auto">
         <div className="p-4 h-full">
           {activeTab === "checkin" && <CheckInTab />}
           {activeTab === "chat"    && <ChatTab />}
