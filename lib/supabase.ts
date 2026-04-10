@@ -1,9 +1,24 @@
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Lazy singleton — only instantiated on the client where env vars are available
+let _supabase: ReturnType<typeof createClient> | null = null;
 
-export const supabase = createClient(url, key);
+export function getSupabase() {
+  if (!_supabase) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) throw new Error("Supabase env vars missing");
+    _supabase = createClient(url, key);
+  }
+  return _supabase;
+}
+
+// Keep named export for convenience — same lazy pattern
+export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_target, prop) {
+    return (getSupabase() as unknown as Record<string, unknown>)[prop as string];
+  },
+});
 
 export const ROOM_ID = "demo";
 
