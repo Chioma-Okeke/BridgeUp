@@ -844,8 +844,14 @@ function DashboardInner() {
 
   if (!me) {
     return (
-      <div className="h-screen w-full bg-[#8C1D40] flex items-center justify-center px-8">
+      <div className="h-screen w-full bg-[#8C1D40] flex flex-col items-center justify-center gap-4 px-8">
         <p className="text-white text-sm text-center">No profile found. Please complete onboarding first.</p>
+        <button
+          onClick={() => { window.location.href = "/widget/onboarding"; }}
+          className="bg-white text-[#8C1D40] text-sm font-semibold px-6 py-2 rounded-full hover:bg-white/90 transition-colors"
+        >
+          Start
+        </button>
       </div>
     );
   }
